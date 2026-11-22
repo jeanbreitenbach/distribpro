@@ -63,9 +63,10 @@ function pages() {
   if (isCli()) return [['sep', 'Portal do cliente'], ['catalogo', '🛒', 'Fazer pedido'], ['pedidos', '🧾', 'Meus pedidos'], ['financeiro', '💰', 'Meus boletos'], ['conta', '👤', 'Minha conta']];
   const p = [['sep', 'Vendas'], ['dashboard', '📊', 'Painel'], ['pedidos', '🧾', 'Pedidos'], ['catalogo', '🛒', 'Catálogo / Novo pedido'], ['clientes', '🏪', isVend() ? 'Minha carteira' : 'Clientes']];
   if (isAdmin()) p.push(['vendedores', '🧑‍💼', 'Vendedores']);
-  p.push(['sep', 'Operação'], ['produtos', '📦', 'Produtos']);
-  if (isAdmin()) p.push(['estoque', '🏷️', 'Estoque']);
-  p.push(['financeiro', '💰', 'Contas a receber'], ['sep', 'Gestão'], ['relatorios', '📈', 'Relatórios']);
+  if (isAdmin()) p.push(['sep', 'Compras e estoque'], ['produtos', '📦', 'Produtos'], ['estoque', '🏷️', 'Estoque'], ['compras', '🚚', 'Compras (NF de entrada)'], ['fornecedores', '🏭', 'Fornecedores'],
+    ['sep', 'Financeiro'], ['financeiro', '💰', 'Contas a receber'], ['pagar', '💸', 'Contas a pagar'], ['fluxo', '📉', 'Fluxo de caixa']);
+  else p.push(['sep', 'Operação'], ['produtos', '📦', 'Produtos'], ['financeiro', '💰', 'Contas a receber']);
+  p.push(['sep', 'Gestão'], ['relatorios', '📈', 'Relatórios']);
   if (isAdmin()) p.push(['tabelas', '💲', 'Tabelas e condições'], ['usuarios', '🔐', 'Usuários e acessos'], ['config', '⚙️', 'Configurações']);
   p.push(['conta', '👤', 'Minha conta']);
   return p;
@@ -105,6 +106,10 @@ const SCHEMAS = {
     ['vendedorId', 'Vendedor', 'select', opts('vendedores', 'nome'), 'admin'], ['tabelaId', 'Tabela de preço', 'select', opts('tabelas', 'nome')], ['condicaoId', 'Condição de pagamento', 'select', opts('condicoes', 'nome')],
     ['limite', 'Limite de crédito (R$)', 'number'], ['ativo', 'Ativo', 'select', simNao]] },
   vendedores: { titulo: 'Vendedor', fields: [['nome', 'Nome', 'text', 'full'], ['email', 'E-mail'], ['telefone', 'Telefone'], ['comissao', 'Comissão (%)', 'number'], ['meta', 'Meta mensal (R$)', 'number'], ['ativo', 'Ativo', 'select', simNao]] },
+  fornecedores: { titulo: 'Fornecedor', fields: [
+    ['razao', 'Razão social', 'text', 'full'], ['fantasia', 'Nome fantasia'], ['cnpj', 'CNPJ/CPF'], ['ie', 'Inscrição estadual'], ['categoria', 'O que fornece (categoria)'],
+    ['contato', 'Contato (vendedor/representante)'], ['telefone', 'Telefone'], ['email', 'E-mail'], ['cidade', 'Cidade'], ['uf', 'UF', 'select', () => UFS.map(x => [x, x])],
+    ['prazo', 'Prazo padrão (dias, ex: 28,42)'], ['pix', 'Chave PIX'], ['banco', 'Dados bancários', 'text', 'full'], ['obs', 'Observações', 'text', 'full'], ['ativo', 'Ativo', 'select', simNao]] },
   tabelas: { titulo: 'Tabela de preço', fields: [['nome', 'Nome', 'text', 'full'], ['ajuste', 'Ajuste sobre preço base (%) — negativo = desconto', 'number', 'full']] },
   condicoes: { titulo: 'Condição de pagamento', fields: [['nome', 'Nome', 'text', 'full'], ['parcelas', 'Dias das parcelas separados por vírgula (ex: 30,60,90)', 'text', 'full']] },
   usuarios: { titulo: 'Usuário', fields: [['nome', 'Nome', 'text', 'full'], ['email', 'E-mail (login)'], ['senha', 'Senha (deixe em branco para manter)', 'password'],
@@ -179,6 +184,8 @@ VIEWS.dashboard = () => {
     <div class="card kpi"><div class="l">Pedidos faturados (mês)</div><div class="v">${vMes.length}</div><div class="s">Ticket médio ${brl(vMes.length ? tMes / vMes.length : 0)}</div></div>
     ${isAdmin() ? `<div class="card kpi"><div class="l">Margem bruta (mês)</div><div class="v">${brl(lucro)}</div><div class="s">${tMes ? num(lucro / tMes * 100, 1) : 0}% sobre vendas</div></div>` : ''}
     <div class="card kpi" style="cursor:pointer" onclick="go('pedidos')"><div class="l">Pedidos em aberto</div><div class="v">${abertos.length}</div><div class="s">${brl(abertos.reduce((s, p) => s + totalPedido(p), 0))} em carteira</div></div>
+    ${isAdmin() ? (() => { const ap = db.pagar.filter(t => !t.pago), av = ap.filter(t => t.vencimento < today()), a7 = ap.filter(t => t.vencimento >= today() && t.vencimento <= addDays(today(), 7));
+      return `<div class="card kpi" style="cursor:pointer" onclick="go('pagar')"><div class="l">A pagar (próx. 7 dias)</div><div class="v">${brl(a7.reduce((s, t) => s + t.valor, 0))}</div><div class="s" style="color:${av.length ? 'var(--bad)' : ''}">${av.length ? av.length + ' conta(s) vencida(s): ' + brl(av.reduce((s, t) => s + t.valor, 0)) : 'Nenhuma conta vencida'}</div></div>`; })() : ''}
     <div class="card kpi" style="cursor:pointer" onclick="go('financeiro')"><div class="l">A receber</div><div class="v">${brl(receber.reduce((s, t) => s + t.valor, 0))}</div><div class="s" style="color:${venc.length ? 'var(--bad)' : ''}">${venc.length} título(s) vencido(s): ${brl(venc.reduce((s, t) => s + t.valor, 0))}</div></div>
   </div>
   <div class="grid two" style="margin-top:14px">

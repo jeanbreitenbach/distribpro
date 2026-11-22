@@ -16,7 +16,7 @@ const { seedDemo, baseVazia } = require('./lib/seed');
 
 const PORT = Number(process.env.PORT) || 3000;
 const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'data', 'distribpro.db');
-const COLS = ['produtos', 'clientes', 'vendedores', 'pedidos', 'movimentos', 'titulos', 'usuarios', 'condicoes', 'tabelas'];
+const COLS = ['produtos', 'clientes', 'vendedores', 'pedidos', 'movimentos', 'titulos', 'usuarios', 'condicoes', 'tabelas', 'fornecedores', 'pagar', 'compras'];
 const uid = () => crypto.randomBytes(8).toString('hex');
 
 /* ================= Persistência ================= */
@@ -100,7 +100,7 @@ function visao(u) {
     return { ...base, clientes, produtos: db.produtos.map(semCusto), tabelas: db.tabelas,
       vendedores: db.vendedores.filter(v => v.id === u.vendedorId),
       pedidos: db.pedidos.filter(p => p.vendedorId === u.vendedorId || ids.has(p.clienteId)),
-      titulos: db.titulos.filter(t => ids.has(t.clienteId)), movimentos: [], usuarios: [] };
+      titulos: db.titulos.filter(t => ids.has(t.clienteId)), movimentos: [], usuarios: [], fornecedores: [], pagar: [], compras: [] };
   }
   // cliente (portal B2B)
   const cli = R.find(db, 'clientes', u.clienteId);
@@ -108,7 +108,7 @@ function visao(u) {
   return { ...base, clientes: cli ? [cli] : [], produtos: db.produtos.filter(p => p.ativo !== 'Não').map(semCusto),
     tabelas: db.tabelas.filter(t => cli && t.id === cli.tabelaId),
     vendedores: v ? [{ id: v.id, nome: v.nome, telefone: v.telefone, email: v.email }] : [],
-    pedidos: db.pedidos.filter(p => p.clienteId === u.clienteId), titulos: db.titulos.filter(t => t.clienteId === u.clienteId), movimentos: [], usuarios: [] };
+    pedidos: db.pedidos.filter(p => p.clienteId === u.clienteId), titulos: db.titulos.filter(t => t.clienteId === u.clienteId), movimentos: [], usuarios: [], fornecedores: [], pagar: [], compras: [] };
 }
 
 /* ================= Cadastros (campos permitidos) ================= */
@@ -118,10 +118,11 @@ const CAMPOS = {
   clientes: { razao: T, fantasia: T, cnpj: T, ie: T, telefone: T, email: T, logradouro: T, numero: T, bairro: T, cidade: T, uf: T, cep: T, vendedorId: T, tabelaId: T, condicaoId: T, limite: N, ativo: T },
   vendedores: { nome: T, email: T, telefone: T, comissao: N, meta: N, ativo: T },
   tabelas: { nome: T, ajuste: N },
+  fornecedores: { razao: T, fantasia: T, cnpj: T, ie: T, contato: T, telefone: T, email: T, cidade: T, uf: T, categoria: T, prazo: T, pix: T, banco: T, obs: T, ativo: T },
   condicoes: { nome: T, parcelas: T },
   usuarios: { nome: T, email: T, papel: T, vendedorId: T, clienteId: T, ativo: T },
 };
-const OBRIG = { produtos: 'nome', clientes: 'razao', vendedores: 'nome', tabelas: 'nome', condicoes: 'nome', usuarios: 'email' };
+const OBRIG = { produtos: 'nome', clientes: 'razao', vendedores: 'nome', tabelas: 'nome', fornecedores: 'razao', condicoes: 'nome', usuarios: 'email' };
 
 class Erro extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
 const exigir = (cond, msg = 'Sem permissão', st = 403) => { if (!cond) throw new Erro(st, msg); };
@@ -157,6 +158,7 @@ function salvarCadastro(u, col, body) {
 function excluirCadastro(u, col, id) {
   exigir(u.papel === 'admin'); exigir(CAMPOS[col], 'Coleção inválida', 404);
   const em = {
+    fornecedores: () => db.compras.some(c => c.fornecedorId === id) || db.pagar.some(t => t.fornecedorId === id),
     vendedores: () => db.clientes.some(c => c.vendedorId === id) || db.pedidos.some(p => p.vendedorId === id) || db.usuarios.some(x => x.vendedorId === id),
     clientes: () => db.pedidos.some(p => p.clienteId === id) || db.usuarios.some(x => x.clienteId === id),
     produtos: () => db.pedidos.some(p => p.itens.some(i => i.produtoId === id)),
@@ -292,6 +294,67 @@ rota('POST', '/api/titulos/:id', (req, b, u, p) => {
   exigir(u.papel === 'admin'); const t = db.titulos.find(x => x.id === p.id); exigir(t, 'Título não encontrado', 404);
   t.pago = !!b.pago; t.dataPagamento = t.pago ? (b.data || R.hoje()) : ''; t.baixadoPor = t.pago ? u.nome : '';
 }, { grava: true });
+/* ---- Contas a pagar ---- */
+const dataOk = d => /^\d{4}-\d{2}-\d{2}$/.test(d || '');
+rota('PUT', '/api/pagar', (req, b, u) => {
+  exigir(u.papel === 'admin');
+  const desc = String(b.descricao || '').trim(); exigir(desc, 'Informe a descrição', 400);
+  exigir(dataOk(b.vencimento), 'Informe o vencimento', 400);
+  if (b.fornecedorId) exigir(R.find(db, 'fornecedores', b.fornecedorId), 'Fornecedor inválido', 400);
+  const valor = R.r2(Number(String(b.valor).replace(',', '.')));
+  exigir(valor > 0, 'Informe um valor maior que zero', 400);
+  const base = { fornecedorId: b.fornecedorId || '', descricao: desc.slice(0, 200), categoria: R.CATEGORIAS_PAGAR.includes(b.categoria) ? b.categoria : 'Outras despesas',
+    documento: String(b.documento || '').slice(0, 60), obs: String(b.obs || '').slice(0, 1000), emissao: dataOk(b.emissao) ? b.emissao : R.hoje() };
+  if (b.id) {
+    const t = db.pagar.find(x => x.id === b.id); exigir(t, 'Conta não encontrada', 404);
+    exigir(!t.pago, 'Estorne o pagamento antes de editar.', 400);
+    Object.assign(t, base, { vencimento: b.vencimento, valor });
+    return;
+  }
+  // nova conta, com parcelamento ou repetição mensal
+  const n = Math.min(120, Math.max(1, parseInt(b.parcelas) || 1)); const intervalo = Math.max(1, parseInt(b.intervalo) || 30);
+  const repetir = b.modo === 'repetir'; const vals = repetir ? Array(n).fill(valor) : R.dividir(valor, n);
+  const grupo = uid();
+  for (let k = 0; k < n; k++) {
+    let venc = b.vencimento;
+    if (k) { if (intervalo === 30) { const d = new Date(b.vencimento + 'T12:00:00'); const dia = d.getDate(); d.setDate(1); d.setMonth(d.getMonth() + k); d.setDate(Math.min(dia, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate())); venc = d.toISOString().slice(0, 10); } else venc = R.addDays(b.vencimento, intervalo * k); }
+    db.pagar.push({ id: uid(), grupo, ...base, parcela: n > 1 ? `${k + 1}/${n}` : '', vencimento: venc, valor: vals[k], pago: false, dataPagamento: '', valorPago: 0, criadoPor: u.nome });
+  }
+}, { grava: true });
+rota('POST', '/api/pagar/:id/baixa', (req, b, u, p) => {
+  exigir(u.papel === 'admin'); const t = db.pagar.find(x => x.id === p.id); exigir(t, 'Conta não encontrada', 404);
+  t.pago = !!b.pago;
+  if (t.pago) { t.dataPagamento = dataOk(b.data) ? b.data : R.hoje(); const vp = Number(b.valorPago); t.valorPago = R.r2(vp > 0 ? vp : t.valor); t.formaPagamento = String(b.forma || '').slice(0, 40); t.baixadoPor = u.nome; }
+  else Object.assign(t, { dataPagamento: '', valorPago: 0, formaPagamento: '', baixadoPor: '' });
+}, { grava: true });
+rota('DELETE', '/api/pagar/:id', (req, b, u, p) => {
+  exigir(u.papel === 'admin'); const t = db.pagar.find(x => x.id === p.id); exigir(t, 'Conta não encontrada', 404);
+  exigir(!t.pago, 'Estorne o pagamento antes de excluir.', 400);
+  exigir(!t.compraId || R.find(db, 'compras', t.compraId)?.status === 'Cancelada', 'Esta conta veio de uma NF de compra. Cancele a compra para removê-la.', 400);
+  db.pagar = db.pagar.filter(x => x.id !== p.id);
+}, { grava: true });
+
+/* ---- Compras (entrada de NF) ---- */
+rota('POST', '/api/compras', (req, b, u) => {
+  exigir(u.papel === 'admin');
+  exigir(R.find(db, 'fornecedores', b.fornecedorId), 'Selecione o fornecedor', 400);
+  const itens = (Array.isArray(b.itens) ? b.itens : []).map(i => ({ produtoId: i.produtoId, qtd: Number(i.qtd), custo: R.r2(Number(i.custo)) }))
+    .filter(i => R.find(db, 'produtos', i.produtoId) && i.qtd > 0 && i.custo >= 0);
+  exigir(itens.length, 'Adicione pelo menos um item', 400);
+  const nf = String(b.nf || '').trim().slice(0, 30);
+  if (nf) exigir(!db.compras.some(c => c.nf === nf && c.fornecedorId === b.fornecedorId && c.status !== 'Cancelada'), `A NF ${nf} deste fornecedor já foi lançada.`, 400);
+  const c = { id: uid(), numero: (db.seq.compra = (db.seq.compra || 0) + 1), fornecedorId: b.fornecedorId, nf, data: dataOk(b.data) ? b.data : R.hoje(), itens,
+    frete: Math.max(0, Number(b.frete) || 0), outras: Math.max(0, Number(b.outras) || 0), parcelas: R.diasParcelas(b.parcelas).join(','), atualizarCusto: b.atualizarCusto !== false,
+    obs: String(b.obs || '').slice(0, 1000), criadoPor: u.nome, criadoEm: new Date().toISOString() };
+  db.compras.push(c); R.lancarCompra(db, c, uid);
+  return { id: c.id };
+}, { grava: true });
+rota('POST', '/api/compras/:id/cancelar', (req, b, u, p) => {
+  exigir(u.papel === 'admin'); const c = R.find(db, 'compras', p.id); exigir(c, 'Compra não encontrada', 404);
+  exigir(c.status !== 'Cancelada', 'Compra já cancelada', 400);
+  R.cancelarCompra(db, c, uid);
+}, { grava: true });
+
 rota('PUT', '/api/empresa', (req, b, u) => {
   exigir(u.papel === 'admin');
   for (const k of ['nome', 'fantasia', 'cnpj', 'ie', 'telefone', 'email', 'logradouro', 'numero', 'bairro', 'cidade', 'uf', 'cep', 'regime']) if (k in b) db.empresa[k] = String(b[k] ?? '').trim();
@@ -301,7 +364,7 @@ rota('POST', '/api/restore', (req, b, u) => {
   exigir(u.papel === 'admin'); const d = b.backup;
   exigir(d && d.empresa && Array.isArray(d.produtos) && Array.isArray(d.pedidos), 'Arquivo de backup inválido', 400);
   if (!Array.isArray(d.usuarios) || !d.usuarios.some(x => x.papel === 'admin' && x.senha)) d.usuarios = db.usuarios; // backup do sistema antigo (sem usuários)
-  d.seq = d.seq || { pedido: Math.max(0, ...d.pedidos.map(p => p.numero || 0)), nfe: 0 }; d.seq.nfe = d.seq.nfe || 0;
+  d.seq = d.seq || { pedido: Math.max(0, ...d.pedidos.map(p => p.numero || 0)), nfe: 0 }; d.seq.nfe = d.seq.nfe || 0; d.seq.compra = d.seq.compra || 0;
   substituirTudo(d);
 }, { grava: true });
 rota('POST', '/api/reset', (req, b, u) => {

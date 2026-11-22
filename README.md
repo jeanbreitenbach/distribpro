@@ -28,6 +28,20 @@ Abra http://localhost:3000. Na primeira execução o sistema cria o banco `data/
 
 As regras são aplicadas **no servidor**. Por exemplo: o cliente não consegue alterar preço nem desconto, e o vendedor não acessa clientes de outro vendedor.
 
+## Compras, contas a pagar e fluxo de caixa (administrador)
+
+- **Fornecedores**: cadastro com CNPJ, contato, prazo padrão de pagamento e dados de PIX/banco. Mostra o histórico de compras e o que está em aberto com cada um.
+- **Compras (NF de entrada)**: ao lançar a nota do fornecedor, o sistema:
+  - dá entrada no estoque;
+  - recalcula o **custo médio ponderado** dos produtos, com rateio do frete e de outras despesas;
+  - gera as **contas a pagar** conforme o prazo (ex.: 28/42 dias).
+  - Bloqueia NF duplicada do mesmo fornecedor e tem uma **sugestão de reposição**, que monta a nota com os produtos abaixo do estoque mínimo.
+  - Cancelar a entrada estorna o estoque e remove as parcelas ainda não pagas.
+- **Contas a pagar**: despesas avulsas, parceladas (divide o valor) ou **fixas mensais** (repete o valor todo mês: aluguel, folha, internet...). A baixa registra a data, o valor pago (com juros ou desconto) e a forma de pagamento. Tem filtros por situação, categoria, fornecedor e período, e exportação para CSV.
+- **Fluxo de caixa**: entradas (a receber) × saídas (a pagar) previstas para 30, 60 ou 90 dias, por semana ou por dia. Informando o saldo atual, mostra o **saldo projetado**. Traz também o realizado dos últimos 30 dias, as despesas por categoria e os valores atrasados.
+
+Vendedores e clientes não têm acesso a nenhuma dessas telas, e a API recusa as chamadas deles.
+
 ## Fluxo do pedido
 
 `Orçamento → Aprovado → Em separação → Faturado → Entregue` (ou `Cancelado`)
@@ -100,6 +114,7 @@ Coloque um proxy com **HTTPS** na frente (Caddy, Nginx). Sem HTTPS, as senhas tr
 server.js          servidor HTTP, autenticação, permissões e API
 lib/regras.js      regras de negócio (compartilhadas com o navegador)
 lib/nfe.js         emissão de NF-e (simulada / Focus NFe)
+public/financeiro.js  fornecedores, compras, contas a pagar e fluxo de caixa
 lib/seed.js        dados de demonstração
 public/            interface web (HTML/CSS/JS, sem build)
 data/              banco SQLite (criado automaticamente)
@@ -109,4 +124,4 @@ data/              banco SQLite (criado automaticamente)
 
 - Todos os dados são mantidos em memória e gravados no SQLite. Funciona bem até algumas dezenas de milhares de pedidos; acima disso, o ideal é migrar para PostgreSQL com consultas paginadas.
 - O navegador recebe a base inteira do perfil a cada atualização (atualiza sozinho a cada 30 s).
-- Ainda não tem: contas a pagar, compras e fornecedores, emissão de boletos, app offline para o vendedor, cancelamento de NF-e pelo sistema.
+- Ainda não tem: emissão de boletos, conciliação bancária, importação do XML da NF de compra, app offline para o vendedor, cancelamento de NF-e pelo sistema.

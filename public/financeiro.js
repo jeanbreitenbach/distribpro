@@ -34,7 +34,7 @@ function verFornecedor(id) {
    <div class="muted" style="margin-bottom:10px">${esc(f.cnpj)} · ${esc(f.contato)} · ${esc(f.telefone)} · ${esc(f.email)} · ${esc(f.cidade)}/${esc(f.uf)}${f.pix ? ' · PIX: ' + esc(f.pix) : ''}</div>
    ${ab.length ? `<h3>Contas em aberto</h3>${tabela([['Vencimento', t => fdate(t.vencimento)], ['Descrição', t => esc(t.descricao) + (t.parcela ? ' <span class="muted">' + t.parcela + '</span>' : '')], ['Valor', t => brl(t.valor), 'num'], ['Situação', situacaoPagar]], ab)}<br>` : ''}
    <h3>Notas de compra</h3>${tabelaCompras(cs.slice(0, 15))}
-   <div class="actions"><button class="btn" onclick="editar('fornecedores','${id}')">Editar cadastro</button><button class="btn pri" onclick="novaCompra('${id}')">+ Lançar NF de compra</button></div>`, true);
+   <div class="actions"><button class="btn" onclick="editar('fornecedores','${id}')">Editar cadastro</button><button class="btn" onclick="novaCompra('${id}')">+ Lançar manualmente</button><button class="btn pri" onclick="escolherXML()">📄 Importar XML</button></div>`, true);
 }
 
 /* ================== CONTAS A PAGAR ================== */
@@ -143,7 +143,7 @@ function tabelaCompras(rows) {
     rows.map(c => ({ ...c, _click: `verCompra('${c.id}')` })), 'Nenhuma nota lançada');
 }
 VIEWS.compras = () => {
-  setActions(`<button class="btn pri" onclick="novaCompra()">+ Lançar NF de compra</button>`);
+  setActions(`<button class="btn" onclick="novaCompra()">+ Lançar manualmente</button><button class="btn pri" onclick="escolherXML()">📄 Importar XML da NF-e</button>`);
   const s = state; const mes = today().slice(0, 7);
   const rows = [...db.compras].sort((a, b) => b.numero - a.numero).filter(c => match(s.q, c.nf, c.numero, nomeForn(c.fornecedorId)) && (!s.fo || c.fornecedorId === s.fo));
   const val = db.compras.filter(c => c.status !== 'Cancelada');
@@ -221,8 +221,8 @@ function verCompra(id) {
   const c = byId('compras', id); if (!c) return; const f = byId('fornecedores', c.fornecedorId) || {};
   const tits = db.pagar.filter(t => t.compraId === id);
   openModal(`<div class="row" style="justify-content:space-between;flex-wrap:wrap"><h2>Entrada #${c.numero} — NF ${esc(c.nf || 's/n')} ${c.status === 'Cancelada' ? '<span class="badge b-bad">Cancelada</span>' : '<span class="badge b-ok">Lançada</span>'}</h2></div>
-    <p><b>${esc(f.razao)}</b> · ${esc(f.cnpj)}<br><span class="muted">Entrada em ${fdate(c.data)} · lançada por ${esc(c.criadoPor || '—')} · ${c.atualizarCusto ? 'custo médio atualizado' : 'custo não alterado'}</span></p>
-    ${tabela([['Cód', i => esc((byId('produtos', i.produtoId) || {}).codigo)], ['Produto', i => esc((byId('produtos', i.produtoId) || {}).nome)], ['Qtd', i => num(i.qtd), 'num'], ['Custo un.', i => brl(i.custo), 'num'], ['Subtotal', i => brl(i.qtd * i.custo), 'num']], c.itens)}
+    <p><b>${esc(f.razao)}</b> · ${esc(f.cnpj)}<br>${c.chave ? `<span class="hint" style="word-break:break-all">Chave ${esc(c.chave)} · série ${esc(c.serie)} · emissão ${fdate(c.emissao)} · importada do XML</span><br>` : ''}<span class="muted">Entrada em ${fdate(c.data)} · lançada por ${esc(c.criadoPor || '—')} · ${c.atualizarCusto ? 'custo médio atualizado' : 'custo não alterado'}</span></p>
+    ${tabela([['Cód', i => esc((byId('produtos', i.produtoId) || {}).codigo)], ['Produto', i => esc((byId('produtos', i.produtoId) || {}).nome)], ['Qtd', i => num(i.qtd, 3).replace(/,?0+$/, '') + (i.fator && i.fator !== 1 ? `<div class="hint">${num(i.qtdNF, 3).replace(/,?0+$/, '')} ${esc(i.unNF)} × ${i.fator}</div>` : ''), 'num'], ['Custo un.', i => brl(i.custo), 'num'], ['Subtotal', i => brl(i.qtd * i.custo), 'num']], c.itens)}
     <div class="grid edit-grid" style="margin-top:12px;align-items:start">
       <div>${c.obs ? `<label>Observações</label><div>${esc(c.obs)}</div>` : ''}<label style="margin-top:8px">Contas a pagar</label>
         ${tits.map(t => `<div>${t.parcela} — venc. ${fdate(t.vencimento)} — ${brl(t.valor)} ${situacaoPagar(t)}</div>`).join('') || '<div class="muted">—</div>'}</div>
@@ -287,3 +287,145 @@ VIEWS.fluxo = () => {
     ['Resultado', g => `<b style="color:${g.res >= 0 ? 'var(--ok)' : 'var(--bad)'}">${brl(g.res)}</b>`, 'num'], [s.saldo !== '' ? 'Saldo projetado' : 'Acumulado', g => `<span style="color:${g.acum >= 0 ? 'inherit' : 'var(--bad)'}">${brl(g.acum)}</span>`, 'num']], grupos)}</div>
   <p class="hint">Considera os títulos em aberto de contas a receber e a pagar pela data de vencimento. Valores já vencidos aparecem em “Atrasados” e não entram na projeção.</p>`;
 };
+
+/* ================== IMPORTAÇÃO DO XML DA NF-e DE COMPRA ================== */
+const soDig = v => String(v || '').replace(/\D/g, '');
+const gtinOk = v => /^\d{8,14}$/.test(String(v || '').trim());
+function escolherXML() {
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.xml,text/xml,application/xml';
+  inp.onchange = () => { const f = inp.files[0]; if (f) f.text().then(t => { try { abrirImportacao(lerNFe(t)); } catch (e) { alert('Não foi possível ler o XML:\n\n' + e.message); } }); };
+  inp.click();
+}
+/** Lê o XML (nfeProc ou NFe) e devolve os dados que interessam à entrada. */
+function lerNFe(xml) {
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  if (doc.getElementsByTagName('parsererror').length) throw new Error('O arquivo não é um XML válido.');
+  const all = (el, tag) => el ? [...el.getElementsByTagNameNS('*', tag)] : [];
+  const one = (el, tag) => all(el, tag)[0] || null;
+  const T = (el, tag) => { const e = one(el, tag); return e ? e.textContent.trim() : ''; };
+  const N = (el, tag) => Number(T(el, tag)) || 0;
+  const inf = one(doc, 'infNFe'); if (!inf) throw new Error('Este XML não é de uma NF-e (não encontrei o grupo infNFe).');
+  const ide = one(inf, 'ide'), emit = one(inf, 'emit'), dest = one(inf, 'dest'), tot = one(inf, 'ICMSTot'), ender = one(emit, 'enderEmit');
+  if (T(ide, 'mod') && T(ide, 'mod') !== '55') throw new Error('Modelo ' + T(ide, 'mod') + ' não suportado. Importe apenas NF-e (modelo 55).');
+  const prot = one(doc, 'protNFe');
+  const itens = all(inf, 'det').map(det => {
+    const prod = one(det, 'prod'), imp = one(det, 'imposto');
+    const custoTotal = N(prod, 'vProd') - N(prod, 'vDesc') + N(prod, 'vSeg') + N(prod, 'vOutro') + N(one(imp, 'IPI'), 'vIPI') + N(imp, 'vICMSST') + N(imp, 'vFCPST');
+    return { nItem: det.getAttribute('nItem'), cProd: T(prod, 'cProd'), xProd: T(prod, 'xProd'), cEAN: T(prod, 'cEAN'), cEANTrib: T(prod, 'cEANTrib'), ncm: T(prod, 'NCM'), cfop: T(prod, 'CFOP'),
+      uCom: T(prod, 'uCom'), qCom: N(prod, 'qCom'), uTrib: T(prod, 'uTrib'), qTrib: N(prod, 'qTrib'), vProd: N(prod, 'vProd'), custoTotal: Math.round(custoTotal * 100) / 100 };
+  });
+  if (!itens.length) throw new Error('A nota não tem itens.');
+  return {
+    chave: soDig((inf.getAttribute('Id') || '').replace(/^NFe/, '')) || soDig(T(prot, 'chNFe')),
+    nf: T(ide, 'nNF'), serie: T(ide, 'serie'), emissao: (T(ide, 'dhEmi') || T(ide, 'dEmi')).slice(0, 10), tpNF: T(ide, 'tpNF'), natOp: T(ide, 'natOp'),
+    autorizada: prot ? T(prot, 'cStat') === '100' : null, motivo: prot ? T(prot, 'xMotivo') : '',
+    emit: { cnpj: T(emit, 'CNPJ') || T(emit, 'CPF'), razao: T(emit, 'xNome'), fantasia: T(emit, 'xFant'), ie: T(emit, 'IE'), cidade: T(ender, 'xMun'), uf: T(ender, 'UF'), telefone: T(ender, 'fone') },
+    destCnpj: T(dest, 'CNPJ') || T(dest, 'CPF'),
+    frete: N(tot, 'vFrete'), totalNF: N(tot, 'vNF'), vProd: N(tot, 'vProd'),
+    duplicatas: all(inf, 'dup').map(d => ({ numero: T(d, 'nDup'), vencimento: T(d, 'dVenc'), valor: Number(T(d, 'vDup')) || 0 })),
+    itens,
+  };
+}
+let imp = null;
+function abrirImportacao(n) {
+  const forn = db.fornecedores.find(f => soDig(f.cnpj) && soDig(f.cnpj) === soDig(n.emit.cnpj));
+  const avisos = [];
+  if (n.autorizada === false) avisos.push(`A SEFAZ não autorizou esta nota (${n.motivo}).`);
+  if (n.autorizada === null) avisos.push('O XML não contém o protocolo de autorização. Confira se a nota é válida.');
+  if (soDig(db.empresa.cnpj) && n.destCnpj && soDig(n.destCnpj) !== soDig(db.empresa.cnpj)) avisos.push(`O destinatário da nota (CNPJ ${n.destCnpj}) não é a sua empresa (${db.empresa.cnpj}).`);
+  if (soDig(n.emit.cnpj) === soDig(db.empresa.cnpj)) avisos.push('O emitente é a sua própria empresa — isto parece uma nota de venda, não de compra.');
+  if (n.tpNF === '0') avisos.push('A nota é de entrada emitida pelo próprio destinatário (tpNF=0). Confira antes de lançar.');
+  const dupl = db.compras.find(c => c.chave && c.chave === n.chave && c.status !== 'Cancelada');
+  if (dupl) avisos.push(`⚠️ Esta NF-e já foi lançada na entrada #${dupl.numero}.`);
+  const vinc = (forn && forn.vinculos) || {};
+  imp = { n, avisos, forn, markup: 30, data: today(), atualizarCusto: true, obs: '',
+    itens: n.itens.map(it => {
+      const x = { ...it, modo: 'existente', produtoId: '', fator: 1, como: '' };
+      const v = vinc[it.cProd];
+      if (v && byId('produtos', v.produtoId)) Object.assign(x, { produtoId: v.produtoId, fator: v.fator || 1, como: 'vínculo salvo' });
+      else if (gtinOk(it.cEAN) && db.produtos.some(p => p.ean === it.cEAN)) Object.assign(x, { produtoId: db.produtos.find(p => p.ean === it.cEAN).id, como: 'código de barras' });
+      else if (gtinOk(it.cEANTrib) && db.produtos.some(p => p.ean === it.cEANTrib)) Object.assign(x, { produtoId: db.produtos.find(p => p.ean === it.cEANTrib).id, fator: it.qCom ? Math.round(it.qTrib / it.qCom * 1000) / 1000 : 1, como: 'código de barras (unidade)' });
+      else {
+        const ean = gtinOk(it.cEAN) ? it.cEAN : gtinOk(it.cEANTrib) ? it.cEANTrib : '';
+        const usaTrib = ean === it.cEANTrib && it.uTrib && it.uTrib !== it.uCom && it.qCom;
+        Object.assign(x, { modo: 'novo', fator: usaTrib ? Math.round(it.qTrib / it.qCom * 1000) / 1000 : 1,
+          novo: { nome: it.xProd, categoria: forn ? forn.categoria || '' : '', unidade: (usaTrib ? it.uTrib : it.uCom).toUpperCase().slice(0, 6), ean, ncm: it.ncm, preco: null, estoqueMin: 0 } });
+      }
+      return x;
+    }) };
+  editorImport();
+}
+const impQtd = it => Math.round(it.qCom * (Number(it.fator) || 1) * 1000) / 1000;
+const impCusto = it => impQtd(it) ? it.custoTotal / impQtd(it) : 0;
+const impPreco = it => it.novo.preco ?? Math.round(impCusto(it) * (1 + imp.markup / 100) * 100) / 100;
+function editorImport() {
+  const { n, forn } = imp; const cats = [...new Set(db.produtos.map(p => p.categoria).filter(Boolean))];
+  const pend = imp.itens.filter(i => i.modo === 'existente' && !i.produtoId).length;
+  const somaItens = imp.itens.reduce((s, i) => s + i.custoTotal, 0); const dif = Math.round((somaItens + n.frete - n.totalNF) * 100) / 100;
+  const somaDup = n.duplicatas.reduce((s, d) => s + d.valor, 0);
+  const linhas = imp.itens.map((it, k) => {
+    const p = byId('produtos', it.produtoId);
+    const vinculo = it.modo === 'existente'
+      ? `<input list="dlprodi" placeholder="Digite código ou nome do produto..." value="${p ? esc(p.codigo + ' - ' + p.nome) : ''}" onchange="impVincular(${k},this.value)" style="min-width:240px">
+         ${p ? `<div class="hint">✓ ${esc(p.unidade)} · estoque ${num(p.estoque)} · custo atual ${brl(p.custo)}${it.como ? ' · por ' + it.como : ''}</div>` : '<div class="hint" style="color:var(--bad)">Escolha o produto ou cadastre como novo</div>'}`
+      : `<input value="${esc(it.novo.nome)}" onchange="imp.itens[${k}].novo.nome=this.value" style="min-width:240px" title="Nome do produto">
+         <div class="row" style="margin-top:4px;gap:4px"><input list="dlcati" placeholder="Categoria" value="${esc(it.novo.categoria)}" onchange="imp.itens[${k}].novo.categoria=this.value" style="width:120px;padding:4px 6px">
+         <input value="${esc(it.novo.unidade)}" onchange="imp.itens[${k}].novo.unidade=this.value.toUpperCase()" style="width:52px;padding:4px 6px" title="Unidade de venda">
+         <span class="hint">venda R$</span><input type="number" step="0.01" value="${impPreco(it).toFixed(2)}" onchange="imp.itens[${k}].novo.preco=+this.value;editorImport()" style="width:84px;padding:4px 6px" title="Preço de venda"></div>
+         <div class="hint">${it.novo.ean ? 'EAN ' + esc(it.novo.ean) + ' · ' : ''}NCM ${esc(it.novo.ncm || '—')}</div>`;
+    return `<tr><td style="white-space:normal;min-width:180px"><b>${esc(it.xProd)}</b><div class="hint">Cód. fornecedor ${esc(it.cProd)}${gtinOk(it.cEAN) ? ' · EAN ' + esc(it.cEAN) : ''}</div><div class="hint">${num(it.qCom, 3).replace(/,?0+$/, '')} ${esc(it.uCom)} · ${brl(it.custoTotal)}</div></td>
+      <td><select onchange="impModo(${k},this.value)" style="width:auto;padding:4px 6px;margin-bottom:4px"><option value="existente" ${it.modo === 'existente' ? 'selected' : ''}>Vincular a produto existente</option><option value="novo" ${it.modo === 'novo' ? 'selected' : ''}>Cadastrar produto novo</option></select><br>${vinculo}</td>
+      <td><input type="number" step="any" min="0.001" value="${it.fator}" onchange="imp.itens[${k}].fator=Math.max(0.001,+this.value||1);editorImport()" style="width:70px" title="Quantas unidades suas há em 1 ${esc(it.uCom)}"><div class="hint">1 ${esc(it.uCom)} = ${it.fator} ${esc(p ? p.unidade : it.novo ? it.novo.unidade : '')}</div></td>
+      <td class="num"><b>${num(impQtd(it), 3).replace(/,?0+$/, '')}</b> ${esc(p ? p.unidade : it.novo ? it.novo.unidade : '')}</td>
+      <td class="num">${brl(impCusto(it))}${p && p.custo ? `<div class="hint" style="color:${impCusto(it) > p.custo * 1.05 ? 'var(--bad)' : impCusto(it) < p.custo * 0.95 ? 'var(--ok)' : 'inherit'}">${impCusto(it) >= p.custo ? '+' : ''}${num((impCusto(it) / p.custo - 1) * 100, 1)}%</div>` : ''}</td></tr>`;
+  }).join('');
+  openModal(`<h2>Importar NF-e de compra — conferência</h2>
+  ${imp.avisos.map(a => `<div class="card" style="border-color:var(--warn);background:var(--warn-soft);padding:10px 12px;margin-bottom:8px">${esc(a)}</div>`).join('')}
+  <div class="grid half" style="margin-bottom:12px">
+    <div class="card" style="padding:12px"><div class="muted" style="font-size:12px">FORNECEDOR</div>
+      <b>${esc(n.emit.razao)}</b><br>${esc(n.emit.cnpj)} · ${esc(n.emit.cidade)}/${esc(n.emit.uf)}<br>
+      ${forn ? `<span class="badge b-ok">Cadastrado como ${esc(forn.fantasia || forn.razao)}</span>` : '<span class="badge b-warn">Novo — será cadastrado automaticamente</span>'}</div>
+    <div class="card" style="padding:12px"><div class="muted" style="font-size:12px">NOTA FISCAL</div>
+      NF <b>${esc(n.nf)}</b> série ${esc(n.serie)} · emissão ${fdate(n.emissao)}<br><span class="hint" style="word-break:break-all">Chave ${esc(n.chave)}</span><br>
+      Total da nota: <b>${brl(n.totalNF)}</b>${n.frete ? ' (frete ' + brl(n.frete) + ')' : ''}</div>
+  </div>
+  <div class="row" style="margin-bottom:8px;flex-wrap:wrap"><span class="hint">Margem para preço de venda dos produtos novos:</span><input type="number" value="${imp.markup}" style="width:80px;padding:4px 6px" onchange="imp.markup=+this.value||0;imp.itens.forEach(i=>{if(i.novo)i.novo.preco=null});editorImport()"><span class="hint">% sobre o custo</span></div>
+  <datalist id="dlprodi">${db.produtos.map(p => `<option value="${esc(p.codigo)} - ${esc(p.nome)}">`).join('')}</datalist><datalist id="dlcati">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
+  <div class="tbl-wrap"><table><thead><tr><th>Item na nota</th><th>Produto no sistema</th><th>Fator</th><th class="num">Entra no estoque</th><th class="num">Custo un.</th></tr></thead><tbody>${linhas}</tbody></table></div>
+  <p class="hint">Custo unitário = valor do item − desconto + IPI + ICMS-ST + seguro/outras, dividido pela quantidade na sua unidade. O frete é rateado no custo ao lançar. O vínculo entre o código do fornecedor e o seu produto fica salvo para as próximas notas.</p>
+  <div class="grid edit-grid" style="align-items:start;margin-top:8px">
+    <div><div class="form"><div><label>Data de entrada no estoque</label><input type="date" value="${imp.data}" onchange="imp.data=this.value"></div>
+      <div><label>&nbsp;</label><label><input type="checkbox" style="width:auto" ${imp.atualizarCusto ? 'checked' : ''} onchange="imp.atualizarCusto=this.checked"> Atualizar custo médio dos produtos</label></div>
+      <div class="full"><label>Observações</label><input value="${esc(imp.obs)}" onchange="imp.obs=this.value"></div></div>
+      <label style="margin-top:10px">Contas a pagar (duplicatas da nota)</label>
+      ${n.duplicatas.length ? n.duplicatas.map(d => `<div class="hint">${esc(d.numero)} — venc. ${fdate(d.vencimento)} — <b>${brl(d.valor)}</b></div>`).join('') + (Math.abs(somaDup - n.totalNF) > 0.05 ? `<div class="hint" style="color:var(--warn)">As duplicatas somam ${brl(somaDup)} (total da nota ${brl(n.totalNF)}).</div>` : '')
+        : `<div class="hint">A nota não traz duplicatas. Prazo de pagamento (dias): <input id="impPrazo" value="${esc(forn && forn.prazo ? forn.prazo : '0')}" style="width:100px;padding:3px 6px"> (0 = à vista)</div>`}</div>
+    <div class="totals"><div><span>Itens (com impostos)</span><span>${brl(somaItens)}</span></div><div><span>Frete</span><span>${brl(n.frete)}</span></div>
+      <div class="g"><span>Total da NF</span><span>${brl(n.totalNF)}</span></div>${Math.abs(dif) > 0.05 ? `<div class="hint" style="color:var(--warn)">Diferença de ${brl(dif)} em relação ao total da nota (outros tributos não somados ao custo).</div>` : ''}</div>
+  </div>
+  <div class="actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" onclick="confirmarImport()" ${pend ? 'disabled title="Vincule todos os itens"' : ''}>${pend ? pend + ' item(ns) sem produto' : 'Confirmar entrada'}</button></div>`, true);
+}
+function impModo(k, modo) {
+  const it = imp.itens[k]; it.modo = modo;
+  if (modo === 'novo' && !it.novo) it.novo = { nome: it.xProd, categoria: imp.forn ? imp.forn.categoria || '' : '', unidade: it.uCom.toUpperCase().slice(0, 6), ean: gtinOk(it.cEAN) ? it.cEAN : gtinOk(it.cEANTrib) ? it.cEANTrib : '', ncm: it.ncm, preco: null, estoqueMin: 0 };
+  editorImport();
+}
+function impVincular(k, txt) {
+  const cod = String(txt || '').split(' - ')[0].trim();
+  const p = db.produtos.find(x => x.codigo === cod || x.ean === cod) || (txt ? db.produtos.find(x => x.nome.toLowerCase().includes(txt.toLowerCase())) : null);
+  imp.itens[k].produtoId = p ? p.id : ''; imp.itens[k].como = p ? 'escolha manual' : '';
+  editorImport();
+}
+async function confirmarImport() {
+  const { n, forn } = imp;
+  const prazo = $('#impPrazo') ? $('#impPrazo').value : '0';
+  const body = {
+    fornecedorId: forn ? forn.id : '', novoFornecedor: forn ? null : { ...n.emit, categoria: '' },
+    nf: n.nf, serie: n.serie, chave: n.chave, emissao: n.emissao, data: imp.data, frete: n.frete, totalNF: n.totalNF,
+    duplicatas: n.duplicatas, parcelas: prazo, atualizarCusto: imp.atualizarCusto, obs: imp.obs,
+    itens: imp.itens.map(it => ({ qtd: impQtd(it), custo: impCusto(it), cProd: it.cProd, xProd: it.xProd, qtdNF: it.qCom, unNF: it.uCom, fator: Number(it.fator) || 1,
+      ...(it.modo === 'novo' ? { novoProduto: { ...it.novo, preco: impPreco(it) } } : { produtoId: it.produtoId }) })),
+  };
+  const r = await acao(() => api('POST', '/api/compras', body), 'NF-e importada: estoque, custos e contas a pagar atualizados');
+  if (r) { closeModal(); verCompra(r.id); }
+}

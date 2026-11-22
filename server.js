@@ -335,17 +335,65 @@ rota('DELETE', '/api/pagar/:id', (req, b, u, p) => {
 }, { grava: true });
 
 /* ---- Compras (entrada de NF) ---- */
+const so = v => String(v || '').replace(/\D/g, '');
+const r4 = v => Math.round((Number(v) || 0) * 1e4) / 1e4;
+const txt = (v, n = 200) => String(v ?? '').trim().slice(0, n);
 rota('POST', '/api/compras', (req, b, u) => {
   exigir(u.papel === 'admin');
-  exigir(R.find(db, 'fornecedores', b.fornecedorId), 'Selecione o fornecedor', 400);
-  const itens = (Array.isArray(b.itens) ? b.itens : []).map(i => ({ produtoId: i.produtoId, qtd: Number(i.qtd), custo: R.r2(Number(i.custo)) }))
-    .filter(i => R.find(db, 'produtos', i.produtoId) && i.qtd > 0 && i.custo >= 0);
-  exigir(itens.length, 'Adicione pelo menos um item', 400);
-  const nf = String(b.nf || '').trim().slice(0, 30);
-  if (nf) exigir(!db.compras.some(c => c.nf === nf && c.fornecedorId === b.fornecedorId && c.status !== 'Cancelada'), `A NF ${nf} deste fornecedor já foi lançada.`, 400);
-  const c = { id: uid(), numero: (db.seq.compra = (db.seq.compra || 0) + 1), fornecedorId: b.fornecedorId, nf, data: dataOk(b.data) ? b.data : R.hoje(), itens,
-    frete: Math.max(0, Number(b.frete) || 0), outras: Math.max(0, Number(b.outras) || 0), parcelas: R.diasParcelas(b.parcelas).join(','), atualizarCusto: b.atualizarCusto !== false,
-    obs: String(b.obs || '').slice(0, 1000), criadoPor: u.nome, criadoEm: new Date().toISOString() };
+  // ---- 1. valida tudo antes de alterar qualquer dado ----
+  let forn = R.find(db, 'fornecedores', b.fornecedorId);
+  const nf = txt(b.nf, 30), chave = so(b.chave);
+  if (!forn && b.novoFornecedor) {
+    const f = b.novoFornecedor; exigir(txt(f.razao), 'Informe a razão social do fornecedor', 400);
+    if (so(f.cnpj)) exigir(!db.fornecedores.some(x => so(x.cnpj) === so(f.cnpj)), 'Já existe um fornecedor com este CNPJ', 400);
+  } else exigir(forn, 'Selecione o fornecedor', 400);
+  if (chave) {
+    exigir(chave.length === 44, 'Chave de acesso inválida', 400);
+    const dup = db.compras.find(c => c.chave === chave && c.status !== 'Cancelada');
+    exigir(!dup, `Esta NF-e já foi lançada (entrada #${dup && dup.numero}).`, 400);
+  }
+  if (nf && forn) exigir(!db.compras.some(c => c.nf === nf && c.fornecedorId === forn.id && c.status !== 'Cancelada'), `A NF ${nf} deste fornecedor já foi lançada.`, 400);
+  const brutos = Array.isArray(b.itens) ? b.itens : [];
+  const eans = new Set();
+  for (const i of brutos) {
+    exigir(Number(i.qtd) > 0 && Number(i.custo) >= 0, 'Quantidade ou custo inválido em algum item', 400);
+    if (i.novoProduto) {
+      exigir(txt(i.novoProduto.nome), 'Informe o nome do produto novo', 400);
+      const ean = so(i.novoProduto.ean);
+      if (ean) { exigir(!db.produtos.some(p => p.ean === ean) && !eans.has(ean), `Já existe um produto com o EAN ${ean}. Vincule ao produto existente.`, 400); eans.add(ean); }
+    } else exigir(R.find(db, 'produtos', i.produtoId), 'Há itens sem produto vinculado', 400);
+  }
+  exigir(brutos.length, 'Adicione pelo menos um item', 400);
+  const dups = (Array.isArray(b.duplicatas) ? b.duplicatas : []).map(d => ({ numero: txt(d.numero, 20), vencimento: d.vencimento, valor: R.r2(d.valor) }));
+  for (const d of dups) exigir(dataOk(d.vencimento) && d.valor > 0, 'Duplicata com vencimento ou valor inválido', 400);
+
+  // ---- 2. aplica ----
+  if (!forn) {
+    const f = b.novoFornecedor;
+    forn = { id: uid(), razao: txt(f.razao), fantasia: txt(f.fantasia) || txt(f.razao), cnpj: txt(f.cnpj, 20), ie: txt(f.ie, 20), telefone: txt(f.telefone, 30), email: txt(f.email, 100),
+      cidade: txt(f.cidade, 60), uf: txt(f.uf, 2), categoria: txt(f.categoria, 60), contato: '', prazo: '', pix: '', banco: '', obs: 'Cadastrado pela importação de XML', ativo: 'Sim' };
+    db.fornecedores.push(forn);
+  }
+  let prox = Math.max(1000, ...db.produtos.map(p => parseInt(p.codigo) || 0));
+  const itens = brutos.map(i => {
+    let pid = i.produtoId;
+    if (i.novoProduto) {
+      const n = i.novoProduto;
+      const p = { id: uid(), codigo: String(++prox), nome: txt(n.nome), categoria: txt(n.categoria, 60) || forn.categoria || '', marca: '', unidade: txt(n.unidade, 6) || 'UN',
+        ean: so(n.ean), ncm: so(n.ncm), custo: R.r2(i.custo), preco: R.r2(Math.max(0, Number(n.preco) || 0)), estoque: 0, estoqueMin: Math.max(0, Number(n.estoqueMin) || 0), ativo: 'Sim' };
+      db.produtos.push(p); pid = p.id;
+    }
+    const item = { produtoId: pid, qtd: Number(i.qtd), custo: r4(i.custo) };
+    if (i.cProd) {
+      Object.assign(item, { cProd: txt(i.cProd, 60), xProd: txt(i.xProd), qtdNF: Number(i.qtdNF) || 0, unNF: txt(i.unNF, 6), fator: Number(i.fator) || 1 });
+      forn.vinculos = forn.vinculos || {}; forn.vinculos[item.cProd] = { produtoId: pid, fator: item.fator }; // memoriza para as próximas notas
+    }
+    return item;
+  });
+  const c = { id: uid(), numero: (db.seq.compra = (db.seq.compra || 0) + 1), fornecedorId: forn.id, nf, serie: txt(b.serie, 3), chave, emissao: dataOk(b.emissao) ? b.emissao : '',
+    data: dataOk(b.data) ? b.data : R.hoje(), itens, frete: R.r2(Math.max(0, Number(b.frete) || 0)), outras: R.r2(Math.max(0, Number(b.outras) || 0)),
+    parcelas: R.diasParcelas(b.parcelas).join(','), duplicatas: dups, totalNF: R.r2(b.totalNF) || undefined, origem: chave ? 'XML' : 'Manual',
+    atualizarCusto: b.atualizarCusto !== false, obs: txt(b.obs, 1000), criadoPor: u.nome, criadoEm: new Date().toISOString() };
   db.compras.push(c); R.lancarCompra(db, c, uid);
   return { id: c.id };
 }, { grava: true });

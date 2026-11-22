@@ -18,17 +18,18 @@ const precoCliente = (p, cli) => Regras.precoCliente(db, p, cli);
 const totalItens = Regras.totalItens, totalPedido = Regras.totalPedido, vendaValida = Regras.vendaValida;
 const emAberto = cid => Regras.emAberto(db, cid);
 const STATUS = Regras.STATUS, BAIXA = Regras.BAIXA;
-const STATUS_BADGE = { 'Orçamento': 'b-mut', 'Aprovado': '', 'Em separação': 'b-warn', 'Faturado': 'b-ok', 'Entregue': 'b-ok', 'Cancelado': 'b-bad' };
+const STATUS_BADGE = { 'Orçamento': 'b-mut', 'Aprovado': '', 'Em separação': 'b-warn', 'Faturado': 'b-ok', 'Entregue': 'b-ok', 'Cancelado': 'b-bad', 'Aguardando envio': 'b-warn' };
 
 async function api(method, url, body) {
   let r, j;
   try {
     r = await fetch(url, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: body ? JSON.stringify(body) : undefined });
     j = await r.json();
-  } catch (e) { throw Object.assign(new Error('Não foi possível falar com o servidor. Verifique sua conexão.'), { status: 0 }); }
+  } catch (e) { setOnline(false); throw Object.assign(new Error('Sem conexão com o servidor. Esta ação precisa de internet.'), { status: 0 }); }
+  setOnline(true);
   if (r.status === 401 && url !== '/api/login') { sair(true); throw Object.assign(new Error(j.erro), { status: 401 }); }
   if (!r.ok) throw Object.assign(new Error(j.erro || 'Erro'), { status: r.status, data: j });
-  if (j.data) db = j.data;
+  if (j.data) { db = j.data; aoReceberDados(); }
   return j;
 }
 /** Executa uma ação no servidor, mostra erros e re-renderiza. */
@@ -37,7 +38,12 @@ async function acao(fn, okMsg) {
   catch (e) { if (e.status !== 401) alert(e.message); return null; }
 }
 function setToken(t) { token = t; try { t ? localStorage.setItem('dp_token', t) : localStorage.removeItem('dp_token'); } catch (e) { } }
-function sair(expirou) { setToken(null); db = null; closeModal(); telaLogin(expirou ? 'Sua sessão expirou. Entre novamente.' : ''); }
+function sair(expirou) {
+  const pend = minhaFila().length;
+  if (!expirou && pend && !confirm(`Há ${pend} pedido(s) feito(s) offline ainda não enviados. Eles continuam guardados neste aparelho e serão enviados no próximo login deste usuário. Sair mesmo assim?`)) return;
+  if (!expirou) idb.del('snap'); // apaga a cópia local dos dados ao sair
+  setToken(null); db = null; closeModal(); telaLogin(expirou ? 'Sua sessão expirou. Entre novamente.' : '');
+}
 
 /* ================== LOGIN ================== */
 function telaLogin(msg) {
@@ -73,11 +79,13 @@ function pages() {
 }
 function iniciarApp() {
   $('#root').innerHTML = `<div class="app"><aside id="side"><div class="brand"><span>D</span>DistribPro</div><nav id="nav"></nav>
-    <div class="user-box"><b>${esc(db.me.nome)}</b>${{ admin: 'Administrador', vendedor: 'Vendedor', cliente: 'Cliente' }[papel()]}<br><a style="cursor:pointer;color:var(--side-text);text-decoration:underline" onclick="sair()">Sair</a></div></aside>
-    <main><div class="top"><button class="btn menu-btn" onclick="$('#side').classList.toggle('open')">☰</button><h1 id="title"></h1><div id="topActions" class="row"></div></div><div id="view"></div></main></div>`;
+    <div class="user-box"><b>${esc(db.me.nome)}</b>${{ admin: 'Administrador', vendedor: 'Vendedor', cliente: 'Cliente' }[papel()]}<br><a style="cursor:pointer;color:var(--side-text);text-decoration:underline" onclick="sair()">Sair</a>
+      <button id="btnInstalar" class="btn sm" style="margin-top:10px;${OFF.instalar ? '' : 'display:none'}" onclick="instalarApp()">📲 Instalar app</button></div></aside>
+    <main><div id="offbar" style="display:none;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-radius:10px;margin-bottom:14px;border:1px solid var(--line)"></div><div class="top"><button class="btn menu-btn" onclick="$('#side').classList.toggle('open')">☰</button><h1 id="title"></h1><div id="topActions" class="row"></div></div><div id="view"></div></main></div>`;
   const h = location.hash.slice(1);
   page = pages().some(p => p[0] === h) ? h : (isCli() ? 'catalogo' : 'dashboard');
-  render();
+  render(); atualizarBarra();
+  if (OFF.online) sincronizar(true);
 }
 function renderNav() { $('#nav').innerHTML = pages().map(p => p[0] === 'sep' ? `<div class="sep">${p[1]}</div>` : `<a class="${page === p[0] ? 'active' : ''}" onclick="go('${p[0]}')"><span>${p[1]}</span>${p[2]}</a>`).join(''); }
 function go(p) { page = p; state = {}; $('#side').classList.remove('open'); location.hash = p; render(); window.scrollTo(0, 0); }
@@ -201,7 +209,7 @@ VIEWS.dashboard = () => {
 };
 
 function tabelaPedidos(rows) {
-  const cols = [['Nº', p => `<b>#${p.numero}</b>`], ['Data', p => fdate(p.data)]];
+  const cols = [['Nº', p => p._offline ? `<span class="badge ${p._erro ? 'b-bad' : 'b-warn'}">${p._erro ? 'recusado' : 'offline'}</span>` : `<b>#${p.numero}</b>`], ['Data', p => fdate(p.data)]];
   if (!isCli()) cols.push(['Cliente', p => esc((byId('clientes', p.clienteId) || {}).fantasia || '—')]);
   if (isAdmin()) cols.push(['Vendedor', p => esc((byId('vendedores', p.vendedorId) || {}).nome || '—')]);
   if (!isCli()) cols.push(['Origem', p => p.origem === 'Portal B2B' ? '<span class="badge">Portal B2B</span>' : `<span class="muted">${esc(p.origem || '')}</span>`]);
@@ -232,6 +240,7 @@ function novoPedido(clienteId) {
 }
 function editarPedido(id) {
   const p = byId('pedidos', id);
+  if (p._offline) { draft = JSON.parse(JSON.stringify(p)); return editorPedido(); }
   if (!Regras.ABERTOS.includes(p.status)) return alert('Pedidos faturados, entregues ou cancelados não podem ser editados. Volte o status para "Aprovado" para editar (o estoque e os títulos em aberto serão estornados).');
   if (isCli() && p.status !== 'Orçamento') return alert('Este pedido já foi aprovado pela distribuidora. Fale com seu vendedor para alterá-lo.');
   draft = JSON.parse(JSON.stringify(p)); editorPedido();
@@ -293,14 +302,25 @@ function addItemBusca(txt) {
 async function salvarPedido(aprovar) {
   const d = draft;
   if (!d.clienteId) return toast('Selecione o cliente'); if (!d.itens.length) return toast('Adicione pelo menos um item');
-  const r = await acao(() => api('POST', '/api/pedidos', { pedido: d, aprovar }));
-  if (!r) return;
-  closeModal(); if (page === 'catalogo') state.cart = [];
-  render(); verPedido(r.id);
-  toast(isCli() ? 'Pedido enviado! A distribuidora vai confirmar em breve.' : 'Pedido salvo');
+  if (!d.id && !d.idLocal) d.idLocal = novoIdLocal(); // identifica o pedido para não duplicar em reenvios
+  const guardarNoAparelho = async () => {
+    await enfileirar(d, aprovar); closeModal(); if (page === 'catalogo') state.cart = []; render();
+    toast('📴 Sem internet: pedido salvo no aparelho. Ele será enviado sozinho quando a conexão voltar.');
+  };
+  if (d._offline || !OFF.online) { await guardarNoAparelho(); if (OFF.online) sincronizar(); return; }
+  try {
+    const r = await api('POST', '/api/pedidos', { pedido: d, aprovar });
+    closeModal(); if (page === 'catalogo') state.cart = [];
+    render(); verPedido(r.id);
+    toast(isCli() ? 'Pedido enviado! A distribuidora vai confirmar em breve.' : 'Pedido salvo');
+  } catch (e) {
+    if (e.status === 0 && !d.id) return guardarNoAparelho(); // caiu a conexão: guarda e envia depois
+    if (e.status !== 401) alert(e.message);
+  }
 }
 function verPedido(id) {
   const p = byId('pedidos', id); if (!p) return;
+  if (p._offline) return verPedidoOffline(p);
   const c = byId('clientes', p.clienteId) || {}; const v = byId('vendedores', p.vendedorId) || {}; const cond = byId('condicoes', p.condicaoId) || {};
   const tits = db.titulos.filter(t => t.pedidoId === id); const e = db.empresa;
   const idx = STATUS.indexOf(p.status);
@@ -615,12 +635,14 @@ function exportCSV(col) {
 
 /* ================== INIT ================== */
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
-// atualiza dados a cada 30s (pedidos novos de outros usuários)
-setInterval(async () => {
-  if (!db || modalAberto() || document.hidden) return;
-  try { await api('GET', '/api/data'); rerender(); } catch (e) { }
-}, 30000);
+// atualiza dados a cada 30s (pedidos novos de outros usuários) e detecta a volta da internet
+setInterval(() => { if (db && !document.hidden && (!modalAberto() || !OFF.online)) verificarConexao(); }, 30000);
 (async () => {
+  await carregarFila();
   if (!token) return telaLogin();
-  try { await api('GET', '/api/data'); iniciarApp(); } catch (e) { if (e.status !== 401) telaLogin(e.message); }
+  try { await api('GET', '/api/data'); iniciarApp(); }
+  catch (e) {
+    if (e.status === 0 && await abrirOffline()) return; // sem internet: abre com a última cópia guardada
+    if (e.status !== 401) telaLogin(e.status === 0 ? 'Sem conexão com o servidor. Conecte-se à internet para entrar.' : e.message);
+  }
 })();

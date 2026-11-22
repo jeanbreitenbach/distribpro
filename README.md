@@ -58,6 +58,21 @@ As regras são aplicadas **no servidor**. Por exemplo: o cliente não consegue a
 
 Vendedores e clientes não têm acesso a nenhuma dessas telas, e a API recusa as chamadas deles.
 
+## App no celular e modo offline (força de vendas)
+
+O DistribPro pode ser **instalado no celular** como um app, sem passar por loja de aplicativos (precisa estar publicado com HTTPS):
+
+- **Android (Chrome)**: abra o endereço do sistema e toque em **📲 Instalar app**, no menu lateral, ou em *⋮ → Instalar app*.
+- **iPhone (Safari)**: toque em *Compartilhar → Adicionar à Tela de Início*.
+
+**Sem internet**, o app continua funcionando com a última cópia dos dados baixada no aparelho: carteira de clientes, catálogo com preços de cada cliente, pedidos e títulos.
+
+- Os pedidos feitos sem sinal ficam salvos no aparelho, com o selo **offline**, e são **enviados sozinhos** quando a conexão volta. Também dá para enviar pelo botão *Enviar agora*.
+- Cada pedido offline leva um identificador único, então **um reenvio nunca duplica o pedido** no servidor, mesmo que a conexão caia no meio do envio.
+- Se o servidor recusar um pedido (ex.: cliente inativado nesse meio-tempo), ele continua no aparelho com o motivo, para o vendedor corrigir ou excluir.
+- Ações que dependem do servidor (aprovar, faturar, financeiro) pedem internet.
+- Ao clicar em *Sair*, a cópia local dos dados é apagada do aparelho. Pedidos ainda não enviados continuam guardados e sobem no próximo login do mesmo usuário.
+
 ## Fluxo do pedido
 
 `Orçamento → Aprovado → Em separação → Faturado → Entregue` (ou `Cancelado`)
@@ -132,6 +147,8 @@ lib/regras.js      regras de negócio (compartilhadas com o navegador)
 lib/nfe.js         emissão de NF-e (simulada / Focus NFe)
 public/financeiro.js  fornecedores, compras, contas a pagar e fluxo de caixa
 public/bancos.js   contas bancárias, extrato OFX e conciliação
+public/offline.js  modo offline: cópia local dos dados e fila de pedidos
+public/sw.js       service worker (abre o app sem internet)
 lib/seed.js        dados de demonstração
 public/            interface web (HTML/CSS/JS, sem build)
 exemplos/          XML de NF-e e extrato OFX fictícios para testar as importações
@@ -142,4 +159,4 @@ data/              banco SQLite (criado automaticamente)
 
 - Todos os dados são mantidos em memória e gravados no SQLite. Funciona bem até algumas dezenas de milhares de pedidos; acima disso, o ideal é migrar para PostgreSQL com consultas paginadas.
 - O navegador recebe a base inteira do perfil a cada atualização (atualiza sozinho a cada 30 s).
-- Ainda não tem: emissão de boletos, integração direta com a API dos bancos (Open Finance), busca automática das notas na SEFAZ (manifestação do destinatário), app offline para o vendedor, cancelamento de NF-e pelo sistema.
+- Ainda não tem: emissão de boletos, integração direta com a API dos bancos (Open Finance), busca automática das notas na SEFAZ (manifestação do destinatário), cancelamento de NF-e pelo sistema.

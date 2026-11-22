@@ -180,6 +180,9 @@ function podeVerPedido(u, p) {
 }
 function salvarPedido(u, { pedido: inp, aprovar }) {
   exigir(inp && Array.isArray(inp.itens), 'Dados inválidos', 400);
+  // pedido criado offline: se já chegou antes (resposta perdida na rede), devolve o mesmo pedido em vez de duplicar
+  const idLocal = typeof inp.idLocal === 'string' ? inp.idLocal.slice(0, 40) : '';
+  if (idLocal && !inp.id) { const ja = db.pedidos.find(p => p.idLocal === idLocal); if (ja) { exigir(podeVerPedido(u, ja)); return ja.id; } }
   const ant = inp.id ? R.find(db, 'pedidos', inp.id) : null;
   if (inp.id) {
     exigir(ant, 'Pedido não encontrado', 404); exigir(podeVerPedido(u, ant));
@@ -198,7 +201,7 @@ function salvarPedido(u, { pedido: inp, aprovar }) {
   }
   exigir(itens.length, 'Adicione pelo menos um item', 400);
   const ped = {
-    ...(ant || { id: uid(), numero: ++db.seq.pedido, status: 'Orçamento', criadoPor: u.nome, criadoEm: new Date().toISOString(),
+    ...(ant || { id: uid(), numero: ++db.seq.pedido, status: 'Orçamento', criadoPor: u.nome, criadoEm: new Date().toISOString(), idLocal: idLocal || undefined, offline: !!inp.criadoOffline || undefined,
       origem: u.papel === 'cliente' ? 'Portal B2B' : u.papel === 'vendedor' ? 'Vendedor' : 'Escritório' }),
     clienteId: cli.id, itens, obs: String(inp.obs || '').slice(0, 2000),
     data: /^\d{4}-\d{2}-\d{2}$/.test(inp.data) ? inp.data : R.hoje(), entrega: /^\d{4}-\d{2}-\d{2}$/.test(inp.entrega) ? inp.entrega : '',
@@ -230,7 +233,7 @@ function statusPedido(u, id, { status, forcar }) {
 }
 
 /* ================= HTTP ================= */
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
 function enviar(res, status, obj, headers = {}) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers }); res.end(JSON.stringify(obj));
 }
@@ -247,7 +250,7 @@ function estatico(req, res) {
   else { if (f === '/' || !path.extname(f)) f = '/index.html'; f = path.join(__dirname, 'public', path.normalize(f)); if (!f.startsWith(path.join(__dirname, 'public'))) return enviar(res, 404, {}); }
   fs.readFile(f, (e, buf) => {
     if (e) return enviar(res, 404, { erro: 'Não encontrado' });
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff' }); res.end(buf);
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff', 'Cache-Control': /\.(png|svg|ico)$/.test(f) ? 'public, max-age=86400' : 'no-cache' }); res.end(buf);
   });
 }
 

@@ -83,6 +83,8 @@ function lerToken(t) {
   return u;
 }
 const tentativas = new Map();
+// Atrás de proxy (Render, Nginx...) o IP real vem em X-Forwarded-For
+const ipCliente = req => (process.env.TRUST_PROXY === '1' && String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()) || req.socket.remoteAddress;
 
 /* ================= Visão por perfil ================= */
 const semCusto = p => { const { custo, ...r } = p; return r; };
@@ -249,7 +251,7 @@ const rotas = [];
 const rota = (m, p, fn, opts = {}) => rotas.push({ m, re: new RegExp('^' + p.replace(/:(\w+)/g, '(?<$1>[^/]+)') + '$'), fn, ...opts });
 
 rota('POST', '/api/login', (req, b) => {
-  const ip = req.socket.remoteAddress; const t = tentativas.get(ip) || { n: 0, ate: 0 };
+  const ip = ipCliente(req); const t = tentativas.get(ip) || { n: 0, ate: 0 };
   if (t.ate > Date.now()) throw new Erro(429, 'Muitas tentativas. Aguarde alguns minutos.');
   const u = db.usuarios.find(x => x.email === String(b.email || '').trim().toLowerCase());
   if (!u || u.ativo === 'Não' || !conferirSenha(b.senha || '', u.senha)) {
@@ -260,6 +262,7 @@ rota('POST', '/api/login', (req, b) => {
   return { token: gerarToken(u), data: visao(u) };
 }, { publica: true, grava: true });
 
+rota('GET', '/api/health', () => ({ status: 'ok' }), { publica: true });
 rota('GET', '/api/data', () => null);
 rota('POST', '/api/senha', (req, b, u) => {
   exigir(conferirSenha(b.atual || '', u.senha), 'Senha atual incorreta', 400);
@@ -327,11 +330,20 @@ const server = http.createServer(async (req, res) => {
 });
 
 if (!carregar()) {
-  console.log('Banco novo — carregando dados de demonstração...');
-  substituirTudo(seedDemo(uid, hashSenha));
+  // DADOS_INICIAIS=vazio → começa só com o administrador (recomendado em produção)
+  // ADMIN_EMAIL / ADMIN_SENHA → define o login do administrador inicial
+  const vazio = process.env.DADOS_INICIAIS === 'vazio';
+  console.log(vazio ? 'Banco novo — base vazia.' : 'Banco novo — carregando dados de demonstração...');
+  const d = vazio ? baseVazia() : seedDemo(uid, hashSenha);
+  const email = (process.env.ADMIN_EMAIL || 'admin@distribpro.local').trim().toLowerCase();
+  const senha = process.env.ADMIN_SENHA || 'admin123';
+  if (process.env.ADMIN_SENHA && senha.length < 8) { console.error('ADMIN_SENHA deve ter pelo menos 8 caracteres.'); process.exit(1); }
+  d.usuarios = [{ id: 'u1', nome: 'Administrador', email, senha: hashSenha(senha), papel: 'admin', vendedorId: '', clienteId: '', ativo: 'Sim' },
+    ...d.usuarios.filter(x => x.papel !== 'admin')];
+  substituirTudo(d);
 }
 server.listen(PORT, () => {
   console.log(`\nDistribPro rodando em http://localhost:${PORT}`);
   console.log(`Banco: ${DB_FILE} · NF-e: ${NFE.provedor()}`);
-  if (db.usuarios.some(x => x.email === 'admin@distribpro.local')) console.log('Login inicial: admin@distribpro.local / admin123 (troque a senha!)\n');
+  if (db.usuarios.some(x => x.email === 'admin@distribpro.local' && conferirSenha('admin123', x.senha))) console.log('Login inicial: admin@distribpro.local / admin123 (troque a senha!)\n');
 });

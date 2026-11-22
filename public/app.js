@@ -586,7 +586,7 @@ VIEWS.config = () => {
     <p class="hint">Também aceita o backup da versão anterior (offline) do DistribPro.</p>
     <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
     <div class="row" style="flex-wrap:wrap"><button class="btn danger" onclick="resetar('demo')">Recarregar dados demo</button><button class="btn danger" onclick="resetar('vazio')">Começar do zero (vazio)</button></div>
-    <p class="hint">Os usuários administradores são mantidos.</p></div></div></div>`;
+    <p class="hint">Os usuários administradores são mantidos. Atenção: os dados demo criam logins de vendedor e cliente com senha <b>123456</b> — não use em um sistema publicado na internet.</p></div></div></div>`;
 };
 async function backup() {
   try { const r = await api('GET', '/api/backup'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(r.backup)], { type: 'application/json' })); a.download = 'distribpro-backup-' + today() + '.json'; a.click(); }

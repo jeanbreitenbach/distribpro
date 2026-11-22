@@ -4,7 +4,7 @@
   "description": "Sistema de gestão para distribuidoras: pedidos, força de vendas, portal B2B, estoque, financeiro e NF-e",
   "main": "server.js",
   "scripts": { "start": "node server.js" },
-  "engines": { "node": ">=22.5" },
+  "engines": { "node": ">=22.13" },
   "license": "UNLICENSED",
   "private": true
 }

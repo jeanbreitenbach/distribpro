@@ -2,7 +2,7 @@
 
 Sistema web multiusuário para distribuidoras, no estilo Demander: pedidos, força de vendas externa, portal B2B do cliente, estoque, contas a receber, relatórios e NF-e.
 
-**Sem dependências:** só precisa do Node.js 22.5 ou superior. O banco de dados (SQLite) já vem embutido no Node.
+**Sem dependências:** só precisa do Node.js 22.13 ou superior. O banco de dados (SQLite) já vem embutido no Node.
 
 ## Como rodar
 
@@ -54,16 +54,31 @@ Para emitir notas reais, o sistema já vem preparado para a [Focus NFe](https://
 
 ## Colocar no ar (para vendedores e clientes acessarem de fora)
 
-Qualquer servidor ou VPS com Node 22 serve. Com Docker:
+### Opção 1: Render (mais fácil, com HTTPS automático)
+
+O repositório já tem o arquivo `render.yaml` configurado.
+
+1. Crie uma conta em https://render.com e conecte sua conta do GitHub.
+2. Abra https://render.com/deploy?repo=https://github.com/jeanbreitenbach/distribpro
+3. Informe o **ADMIN_EMAIL** e a **ADMIN_SENHA** (mínimo de 8 caracteres) do administrador e clique em **Deploy**.
+4. Em cerca de 2 minutos o sistema estará em `https://distribpro-xxxx.onrender.com`. Dá para usar um domínio próprio em *Settings → Custom Domains*.
+
+Custo aproximado: US$ 7/mês (plano Starter) + US$ 0,25/mês (disco de 1 GB). O plano gratuito **não serve**, porque não tem disco e os dados seriam apagados a cada reinício.
+
+O sistema publicado começa **vazio**, só com o administrador. Cadastre produtos, clientes e vendedores, e crie os logins em **Usuários e acessos**.
+
+### Opção 2: servidor próprio / VPS com Docker
 
 ```bash
 docker build -t distribpro .
-docker run -d -p 3000:3000 -v distribpro-data:/data --name distribpro distribpro
+docker run -d -p 3000:3000 -v distribpro-data:/data \
+  -e DADOS_INICIAIS=vazio -e ADMIN_EMAIL=voce@empresa.com -e ADMIN_SENHA='senha-forte' -e TRUST_PROXY=1 \
+  --name distribpro distribpro
 ```
 
-Coloque um proxy com **HTTPS** na frente (Caddy, Nginx ou o próprio provedor). Sem HTTPS, as senhas trafegam abertas pela internet.
+Coloque um proxy com **HTTPS** na frente (Caddy, Nginx). Sem HTTPS, as senhas trafegam abertas pela internet.
 
-**Backup:** copie o arquivo `data/distribpro.db` (ou o volume `/data`) periodicamente, ou use **Configurações → Baixar backup**.
+**Backup:** copie o arquivo do banco (no Render: o disco `/var/data`; no Docker: o volume `/data`) periodicamente, ou use **Configurações → Baixar backup**.
 
 ## Variáveis de ambiente
 
@@ -74,6 +89,10 @@ Coloque um proxy com **HTTPS** na frente (Caddy, Nginx ou o próprio provedor). 
 | `NFE_PROVEDOR` | `simulado` | `simulado` ou `focusnfe` |
 | `FOCUS_TOKEN` | — | Token da API Focus NFe |
 | `FOCUS_AMBIENTE` | `homologacao` | `homologacao` ou `producao` |
+| `DADOS_INICIAIS` | `demo` | `vazio` para começar sem dados de demonstração (só na criação do banco) |
+| `ADMIN_EMAIL` | admin@distribpro.local | Login do administrador inicial (só na criação do banco) |
+| `ADMIN_SENHA` | admin123 | Senha do administrador inicial, mín. 8 caracteres (só na criação do banco) |
+| `TRUST_PROXY` | — | `1` quando estiver atrás de proxy/HTTPS, para identificar o IP real no bloqueio de login |
 
 ## Estrutura
 

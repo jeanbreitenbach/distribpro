@@ -1,7 +1,7 @@
 /* DistribPro — service worker: guarda as telas do app para abrir sem internet.
    Os dados (API) não passam por aqui: o app guarda a última cópia no IndexedDB. */
-const VERSAO = 'distribpro-v1';
-const ARQUIVOS = ['/', '/index.html', '/style.css', '/regras.js', '/app.js', '/financeiro.js', '/bancos.js', '/offline.js', '/manifest.webmanifest',
+const VERSAO = 'distribpro-v2';
+const ARQUIVOS = ['/', '/index.html', '/style.css', '/regras.js', '/app.js', '/financeiro.js', '/bancos.js', '/visitas.js', '/offline.js', '/manifest.webmanifest',
   '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

@@ -16,7 +16,7 @@ const { seedDemo, baseVazia } = require('./lib/seed');
 
 const PORT = Number(process.env.PORT) || 3000;
 const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'data', 'distribpro.db');
-const COLS = ['produtos', 'clientes', 'vendedores', 'pedidos', 'movimentos', 'titulos', 'usuarios', 'condicoes', 'tabelas', 'fornecedores', 'pagar', 'compras', 'bancos', 'extrato'];
+const COLS = ['produtos', 'clientes', 'vendedores', 'pedidos', 'movimentos', 'titulos', 'usuarios', 'condicoes', 'tabelas', 'fornecedores', 'pagar', 'compras', 'bancos', 'extrato', 'visitas'];
 const uid = () => crypto.randomBytes(8).toString('hex');
 
 /* ================= Persistência ================= */
@@ -100,7 +100,8 @@ function visao(u) {
     return { ...base, clientes, produtos: db.produtos.map(semCusto), tabelas: db.tabelas,
       vendedores: db.vendedores.filter(v => v.id === u.vendedorId),
       pedidos: db.pedidos.filter(p => p.vendedorId === u.vendedorId || ids.has(p.clienteId)),
-      titulos: db.titulos.filter(t => ids.has(t.clienteId)), movimentos: [], usuarios: [], fornecedores: [], pagar: [], compras: [], bancos: [], extrato: [] };
+      titulos: db.titulos.filter(t => ids.has(t.clienteId)), movimentos: [], usuarios: [], fornecedores: [], pagar: [], compras: [], bancos: [], extrato: [],
+      visitas: db.visitas.filter(v => v.vendedorId === u.vendedorId) };
   }
   // cliente (portal B2B)
   const cli = R.find(db, 'clientes', u.clienteId);
@@ -108,14 +109,14 @@ function visao(u) {
   return { ...base, clientes: cli ? [cli] : [], produtos: db.produtos.filter(p => p.ativo !== 'Não').map(semCusto),
     tabelas: db.tabelas.filter(t => cli && t.id === cli.tabelaId),
     vendedores: v ? [{ id: v.id, nome: v.nome, telefone: v.telefone, email: v.email }] : [],
-    pedidos: db.pedidos.filter(p => p.clienteId === u.clienteId), titulos: db.titulos.filter(t => t.clienteId === u.clienteId), movimentos: [], usuarios: [], fornecedores: [], pagar: [], compras: [], bancos: [], extrato: [] };
+    pedidos: db.pedidos.filter(p => p.clienteId === u.clienteId), titulos: db.titulos.filter(t => t.clienteId === u.clienteId), movimentos: [], usuarios: [], fornecedores: [], pagar: [], compras: [], bancos: [], extrato: [], visitas: [] };
 }
 
 /* ================= Cadastros (campos permitidos) ================= */
 const T = 'text', N = 'number';
 const CAMPOS = {
   produtos: { codigo: T, nome: T, categoria: T, marca: T, unidade: T, ean: T, ncm: T, custo: N, preco: N, estoque: N, estoqueMin: N, ativo: T },
-  clientes: { razao: T, fantasia: T, cnpj: T, ie: T, telefone: T, email: T, logradouro: T, numero: T, bairro: T, cidade: T, uf: T, cep: T, vendedorId: T, tabelaId: T, condicaoId: T, limite: N, ativo: T },
+  clientes: { razao: T, fantasia: T, cnpj: T, ie: T, telefone: T, email: T, logradouro: T, numero: T, bairro: T, cidade: T, uf: T, cep: T, vendedorId: T, tabelaId: T, condicaoId: T, limite: N, ativo: T, diaVisita: T, frequencia: N, lat: N, lng: N },
   vendedores: { nome: T, email: T, telefone: T, comissao: N, meta: N, ativo: T },
   tabelas: { nome: T, ajuste: N },
   bancos: { nome: T, banco: T, agencia: T, conta: T, saldoInicial: N, dataSaldo: T, ativo: T },
@@ -214,6 +215,9 @@ function salvarPedido(u, { pedido: inp, aprovar }) {
     exigir(R.find(db, 'condicoes', ped.condicaoId), 'Selecione a condição de pagamento', 400);
   }
   if (ant) Object.assign(ant, ped); else db.pedidos.push(ped);
+  // pedido tirado durante uma visita: liga os dois
+  const vis = inp.visitaId && db.visitas.find(v => v.id === inp.visitaId);
+  if (vis && u.papel !== 'cliente' && vis.clienteId === cli.id && (u.papel === 'admin' || vis.vendedorId === u.vendedorId)) { vis.pedidoId = (ant || ped).id; (ant || ped).visitaId = vis.id; }
   if (aprovar && u.papel !== 'cliente' && ped.status === 'Orçamento') R.mudarStatus(db, ant || ped, 'Aprovado', uid);
   return (ant || ped).id;
 }
@@ -406,6 +410,80 @@ rota('POST', '/api/compras/:id/cancelar', (req, b, u, p) => {
   exigir(u.papel === 'admin'); const c = R.find(db, 'compras', p.id); exigir(c, 'Compra não encontrada', 404);
   exigir(c.status !== 'Cancelada', 'Compra já cancelada', 400);
   R.cancelarCompra(db, c, uid);
+}, { grava: true });
+
+/* ---- Agenda de visitas ---- */
+function podeVisita(u, v) { return u.papel === 'admin' || (u.papel === 'vendedor' && v.vendedorId === u.vendedorId); }
+const horaCliente = em => { const t = Date.parse(em); const agora = Date.now(); return t && t > agora - 7 * 864e5 && t < agora + 5 * 60e3 ? new Date(t).toISOString() : new Date().toISOString(); };
+const coord = (lat, lng) => { lat = Number(lat); lng = Number(lng); return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && (lat || lng) ? { lat, lng } : null; };
+rota('PUT', '/api/visitas', (req, b, u) => {
+  exigir(u.papel !== 'cliente');
+  const cli = R.find(db, 'clientes', b.clienteId); exigir(cli, 'Selecione o cliente', 400);
+  const vendedorId = u.papel === 'vendedor' ? u.vendedorId : (b.vendedorId || cli.vendedorId);
+  if (u.papel === 'vendedor') exigir(cli.vendedorId === u.vendedorId, 'Cliente fora da sua carteira');
+  exigir(R.find(db, 'vendedores', vendedorId), 'Selecione o vendedor', 400);
+  exigir(dataOk(b.data), 'Informe a data', 400);
+  if (b.id) {
+    const v = db.visitas.find(x => x.id === b.id); exigir(v && podeVisita(u, v), 'Visita não encontrada', 404);
+    exigir(v.status === 'Agendada' && !v.checkin, 'Só é possível alterar visitas ainda não iniciadas.', 400);
+    Object.assign(v, { clienteId: cli.id, vendedorId, data: b.data, hora: txt(b.hora, 5), obs: txt(b.obs, 500) });
+    return { id: v.id };
+  }
+  const ordem = Math.max(0, ...db.visitas.filter(v => v.vendedorId === vendedorId && v.data === b.data).map(v => v.ordem || 0)) + 1;
+  const v = { id: uid(), vendedorId, clienteId: cli.id, data: b.data, hora: txt(b.hora, 5), ordem, status: 'Agendada', obs: txt(b.obs, 500), objetivo: txt(b.objetivo, 200), criadoPor: u.nome, criadoEm: new Date().toISOString() };
+  db.visitas.push(v); return { id: v.id };
+}, { grava: true });
+rota('POST', '/api/visitas/gerar', (req, b, u) => {
+  exigir(u.papel !== 'cliente');
+  const vids = u.papel === 'vendedor' ? [u.vendedorId] : (b.vendedorId ? [b.vendedorId] : db.vendedores.filter(v => v.ativo !== 'Não').map(v => v.id));
+  exigir(dataOk(b.de) && dataOk(b.ate) && b.de <= b.ate && R.diasEntre(b.de, b.ate) <= 31, 'Período inválido (máx. 31 dias)', 400);
+  let criadas = 0;
+  for (const vid of vids) {
+    const clientes = db.clientes.filter(c => c.vendedorId === vid && c.ativo !== 'Não' && c.diaVisita !== '' && c.diaVisita != null && Number(c.frequencia) > 0);
+    for (let d = b.de; d <= b.ate; d = R.addDays(d, 1)) {
+      for (const c of clientes.filter(c => String(R.diaSemana(d)) === String(c.diaVisita))) {
+        const anteriores = db.visitas.filter(v => v.clienteId === c.id && v.data <= d && v.status !== 'Não realizada').map(v => v.data).sort();
+        const ult = anteriores.pop();
+        if (ult && (ult === d || R.diasEntre(ult, d) < Number(c.frequencia))) continue;
+        const ordem = Math.max(0, ...db.visitas.filter(v => v.vendedorId === vid && v.data === d).map(v => v.ordem || 0)) + 1;
+        db.visitas.push({ id: uid(), vendedorId: vid, clienteId: c.id, data: d, hora: '', ordem, status: 'Agendada', obs: '', objetivo: '', criadoPor: u.nome + ' (roteiro)', criadoEm: new Date().toISOString() });
+        criadas++;
+      }
+    }
+  }
+  return { criadas };
+}, { grava: true });
+rota('POST', '/api/visitas/ordem', (req, b, u) => {
+  exigir(u.papel !== 'cliente'); const ids = Array.isArray(b.ids) ? b.ids : [];
+  const vs = ids.map(id => db.visitas.find(v => v.id === id)); exigir(vs.every(v => v && podeVisita(u, v)), 'Visita inválida', 400);
+  vs.forEach((v, i) => v.ordem = i + 1);
+}, { grava: true });
+rota('POST', '/api/visitas/:id/checkin', (req, b, u, p) => {
+  const v = db.visitas.find(x => x.id === p.id); exigir(v && podeVisita(u, v), 'Visita não encontrada', 404);
+  if (v.checkin) return; // reenvio da fila offline: mantém o primeiro check-in
+  exigir(v.status === 'Agendada', 'Visita já encerrada', 400);
+  const cli = R.find(db, 'clientes', v.clienteId) || {}; const pos = coord(b.lat, b.lng);
+  v.checkin = { em: horaCliente(b.em), por: u.nome, ...(pos ? { ...pos, precisao: Math.round(Number(b.precisao) || 0) } : { semGps: true }) };
+  if (pos && coord(cli.lat, cli.lng)) v.checkin.distancia = R.distancia(pos.lat, pos.lng, cli.lat, cli.lng);
+  else if (pos && b.salvarLocal) { cli.lat = pos.lat; cli.lng = pos.lng; v.checkin.localSalvo = true; }
+}, { grava: true });
+rota('POST', '/api/visitas/:id/encerrar', (req, b, u, p) => {
+  const v = db.visitas.find(x => x.id === p.id); exigir(v && podeVisita(u, v), 'Visita não encontrada', 404);
+  if (v.status !== 'Agendada') return; // já encerrada (reenvio)
+  const realizada = !!b.realizada;
+  const motivos = realizada ? R.MOTIVOS_SEM_PEDIDO : R.MOTIVOS_NAO_REALIZADA;
+  if (!(realizada && v.pedidoId)) exigir(motivos.includes(b.motivo), 'Selecione o motivo', 400);
+  if (realizada && !v.checkin) v.checkin = { em: horaCliente(b.em), por: u.nome, semGps: true, automatico: true };
+  const pos = coord(b.lat, b.lng);
+  v.status = realizada ? 'Realizada' : 'Não realizada';
+  v.resultado = realizada && v.pedidoId ? 'Pedido realizado' : b.motivo;
+  v.checkout = { em: horaCliente(b.em), por: u.nome, ...(pos || {}) };
+  if (b.obs) v.obs = txt(b.obs, 500);
+}, { grava: true });
+rota('DELETE', '/api/visitas/:id', (req, b, u, p) => {
+  const v = db.visitas.find(x => x.id === p.id); exigir(v && podeVisita(u, v), 'Visita não encontrada', 404);
+  exigir(v.status === 'Agendada' && !v.checkin, 'Visitas iniciadas ou encerradas não podem ser excluídas.', 400);
+  db.visitas = db.visitas.filter(x => x.id !== p.id);
 }, { grava: true });
 
 /* ---- Bancos e conciliação ---- */

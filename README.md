@@ -73,6 +73,16 @@ O DistribPro pode ser **instalado no celular** como um app, sem passar por loja 
 - Ações que dependem do servidor (aprovar, faturar, financeiro) pedem internet.
 - Ao clicar em *Sair*, a cópia local dos dados é apagada do aparelho. Pedidos ainda não enviados continuam guardados e sobem no próximo login do mesmo usuário.
 
+## Agenda de visitas e check-in (força de vendas)
+
+- **Roteiro**: cada cliente tem **dia de visita** e **frequência** (semanal, quinzenal, mensal). O botão *Gerar roteiro* agenda as visitas do período respeitando a frequência a partir da última visita, sem duplicar. Também dá para agendar visitas avulsas, com horário e objetivo.
+- **Agenda do dia** (pensada para o celular): ordem das visitas (reordenável), rota no Google Maps com as visitas pendentes, endereço e telefone, última compra e alerta de títulos vencidos.
+- **Check-in com GPS**: registra a hora e a **distância até o cliente**. Check-ins a mais de 300 m são sinalizados. No primeiro check-in de um cliente sem localização, a posição pode ser salva como a dele.
+- **Pedido na visita**: o botão *Fazer pedido* liga o pedido à visita. Ao encerrar, a visita sem pedido exige o **motivo** (estoque abastecido, comprou da concorrência, responsável ausente...). Também é possível registrar a visita como não realizada.
+- **Funciona sem internet**: check-in, pedido e encerramento entram na mesma fila offline dos pedidos e são enviados na ordem certa quando a conexão volta.
+- **Relatório de visitas** (gestor): planejadas × realizadas, % de execução do roteiro, **positivação** (visitas que viraram pedido), tempo médio de visita, motivos de visita sem pedido e check-ins a conferir (longe do cliente ou sem GPS).
+- O vendedor vê apenas a própria agenda. O administrador vê e agenda para todos.
+
 ## Fluxo do pedido
 
 `Orçamento → Aprovado → Em separação → Faturado → Entregue` (ou `Cancelado`)
@@ -147,7 +157,8 @@ lib/regras.js      regras de negócio (compartilhadas com o navegador)
 lib/nfe.js         emissão de NF-e (simulada / Focus NFe)
 public/financeiro.js  fornecedores, compras, contas a pagar e fluxo de caixa
 public/bancos.js   contas bancárias, extrato OFX e conciliação
-public/offline.js  modo offline: cópia local dos dados e fila de pedidos
+public/visitas.js  agenda de visitas, roteiro, check-in e relatório de visitas
+public/offline.js  modo offline: cópia local dos dados e fila de pedidos/visitas
 public/sw.js       service worker (abre o app sem internet)
 lib/seed.js        dados de demonstração
 public/            interface web (HTML/CSS/JS, sem build)

@@ -67,12 +67,12 @@ async function entrar() {
 /* ================== LAYOUT / NAV ================== */
 function pages() {
   if (isCli()) return [['sep', 'Portal do cliente'], ['catalogo', '🛒', 'Fazer pedido'], ['pedidos', '🧾', 'Meus pedidos'], ['financeiro', '💰', 'Meus boletos'], ['conta', '👤', 'Minha conta']];
-  const p = [['sep', 'Vendas'], ['dashboard', '📊', 'Painel'], ['pedidos', '🧾', 'Pedidos'], ['catalogo', '🛒', 'Catálogo / Novo pedido'], ['clientes', '🏪', isVend() ? 'Minha carteira' : 'Clientes']];
+  const p = [['sep', 'Vendas'], ['dashboard', '📊', 'Painel'], ['pedidos', '🧾', 'Pedidos'], ['catalogo', '🛒', 'Catálogo / Novo pedido'], ['agenda', '📍', 'Agenda de visitas'], ['clientes', '🏪', isVend() ? 'Minha carteira' : 'Clientes']];
   if (isAdmin()) p.push(['vendedores', '🧑‍💼', 'Vendedores']);
   if (isAdmin()) p.push(['sep', 'Compras e estoque'], ['produtos', '📦', 'Produtos'], ['estoque', '🏷️', 'Estoque'], ['compras', '🚚', 'Compras (NF de entrada)'], ['fornecedores', '🏭', 'Fornecedores'],
     ['sep', 'Financeiro'], ['financeiro', '💰', 'Contas a receber'], ['pagar', '💸', 'Contas a pagar'], ['bancos', '🏦', 'Bancos e conciliação'], ['fluxo', '📉', 'Fluxo de caixa']);
   else p.push(['sep', 'Operação'], ['produtos', '📦', 'Produtos'], ['financeiro', '💰', 'Contas a receber']);
-  p.push(['sep', 'Gestão'], ['relatorios', '📈', 'Relatórios']);
+  p.push(['sep', 'Gestão'], ['relatorios', '📈', 'Relatórios'], ['visitas', '🗓️', 'Relatório de visitas']);
   if (isAdmin()) p.push(['tabelas', '💲', 'Tabelas e condições'], ['usuarios', '🔐', 'Usuários e acessos'], ['config', '⚙️', 'Configurações']);
   p.push(['conta', '👤', 'Minha conta']);
   return p;
@@ -191,6 +191,8 @@ VIEWS.dashboard = () => {
     <div class="card kpi"><div class="l">Faturamento do mês</div><div class="v">${brl(tMes)}</div><div class="s" style="color:${var_ >= 0 ? 'var(--ok)' : 'var(--bad)'}">${var_ >= 0 ? '▲' : '▼'} ${num(Math.abs(var_), 1)}% vs mês anterior</div></div>
     <div class="card kpi"><div class="l">Pedidos faturados (mês)</div><div class="v">${vMes.length}</div><div class="s">Ticket médio ${brl(vMes.length ? tMes / vMes.length : 0)}</div></div>
     ${isAdmin() ? `<div class="card kpi"><div class="l">Margem bruta (mês)</div><div class="v">${brl(lucro)}</div><div class="s">${tMes ? num(lucro / tMes * 100, 1) : 0}% sobre vendas</div></div>` : ''}
+    ${(() => { const vh = (db.visitas || []).filter(v => v.data === today() && (!isVend() || v.vendedorId === db.me.vendedorId)); const f = vh.filter(v => v.status !== 'Agendada').length;
+      return vh.length ? `<div class="card kpi" style="cursor:pointer" onclick="go('agenda')"><div class="l">Visitas de hoje</div><div class="v">${f}/${vh.length}</div><div class="s">${vh.filter(v => v.pedidoId).length} com pedido · ${vh.length - f} pendente(s)</div></div>` : ''; })()}
     <div class="card kpi" style="cursor:pointer" onclick="go('pedidos')"><div class="l">Pedidos em aberto</div><div class="v">${abertos.length}</div><div class="s">${brl(abertos.reduce((s, p) => s + totalPedido(p), 0))} em carteira</div></div>
     ${isAdmin() ? (() => { const ap = db.pagar.filter(t => !t.pago), av = ap.filter(t => t.vencimento < today()), a7 = ap.filter(t => t.vencimento >= today() && t.vencimento <= addDays(today(), 7));
       return `<div class="card kpi" style="cursor:pointer" onclick="go('pagar')"><div class="l">A pagar (próx. 7 dias)</div><div class="v">${brl(a7.reduce((s, t) => s + t.valor, 0))}</div><div class="s" style="color:${av.length ? 'var(--bad)' : ''}">${av.length ? av.length + ' conta(s) vencida(s): ' + brl(av.reduce((s, t) => s + t.valor, 0)) : 'Nenhuma conta vencida'}</div></div>`; })() : ''}

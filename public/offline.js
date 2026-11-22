@@ -44,8 +44,29 @@ const minhaFila = () => db ? OFF.fila.filter(e => e.uid === db.me.id) : [];
 function mesclarFila() {
   if (!db) return;
   db.pedidos = db.pedidos.filter(p => !p._offline);
-  minhaFila().forEach((e, i) => db.pedidos.push({ ...e.pedido, id: e.idLocal, numero: 1e9 + i, status: 'Aguardando envio', _offline: true, _erro: e.erro, _aprovar: e.aprovar,
-    criadoEm: e.criadoEm, origem: isCli() ? 'Portal B2B' : isVend() ? 'Vendedor' : 'Escritório', criadoPor: db.me.nome }));
+  const fila = minhaFila();
+  fila.filter(e => !e.tipo).forEach((e, i) => {
+    db.pedidos.push({ ...e.pedido, id: e.idLocal, numero: 1e9 + i, status: 'Aguardando envio', _offline: true, _erro: e.erro, _aprovar: e.aprovar,
+      criadoEm: e.criadoEm, origem: isCli() ? 'Portal B2B' : isVend() ? 'Vendedor' : 'Escritório', criadoPor: db.me.nome });
+    const v = e.pedido.visitaId && (db.visitas || []).find(x => x.id === e.pedido.visitaId); if (v && !v.pedidoId) v.pedidoId = e.idLocal;
+  });
+  // check-ins e encerramentos de visita feitos sem internet: aplica na tela até serem enviados
+  fila.filter(e => e.tipo === 'visita').forEach(e => {
+    const v = (db.visitas || []).find(x => x.id === e.visitaId); if (!v) return;
+    const d = e.dados; v._pendente = true;
+    if (e.acao === 'checkin' && !v.checkin) {
+      const c = byId('clientes', v.clienteId) || {};
+      v.checkin = d.lat != null ? { em: d.em, lat: d.lat, lng: d.lng, precisao: d.precisao, ...(Number(c.lat) ? { distancia: Regras.distancia(d.lat, d.lng, c.lat, c.lng) } : {}) } : { em: d.em, semGps: true };
+    }
+    if (e.acao === 'encerrar' && v.status === 'Agendada') {
+      if (d.realizada && !v.checkin) v.checkin = { em: d.em, semGps: true, automatico: true };
+      Object.assign(v, { status: d.realizada ? 'Realizada' : 'Não realizada', resultado: d.realizada && v.pedidoId ? 'Pedido realizado' : d.motivo, checkout: { em: d.em }, obs: d.obs || v.obs });
+    }
+  });
+}
+async function enfileirarVisita(visitaId, acao, dados) {
+  OFF.fila.push({ tipo: 'visita', idLocal: novoIdLocal(), uid: db.me.id, visitaId, acao, dados, criadoEm: new Date().toISOString(), erro: '' });
+  await idb.set('fila', OFF.fila); mesclarFila(); atualizarBarra();
 }
 async function enfileirar(d, aprovar) {
   const { _offline, _erro, _aprovar, numero, status, criadoPor, origem, ...ped } = d;
@@ -67,7 +88,10 @@ async function sincronizar(silencioso) {
   OFF.sincronizando = true; atualizarBarra();
   let ok = 0; const erros = [];
   for (const e of minhaFila()) {
-    try { await api('POST', '/api/pedidos', { pedido: e.pedido, aprovar: e.aprovar }); OFF.fila = OFF.fila.filter(x => x.idLocal !== e.idLocal); ok++; }
+    try {
+      if (e.tipo === 'visita') await api('POST', `/api/visitas/${e.visitaId}/${e.acao}`, e.dados);
+      else await api('POST', '/api/pedidos', { pedido: e.pedido, aprovar: e.aprovar });
+      OFF.fila = OFF.fila.filter(x => x.idLocal !== e.idLocal); ok++; }
     catch (err) {
       if (err.status === 0 || err.status === 401) break; // sem rede ou sessão expirada: tenta de novo depois
       e.erro = err.message; erros.push(err.message);
@@ -76,8 +100,8 @@ async function sincronizar(silencioso) {
   await idb.set('fila', OFF.fila); OFF.sincronizando = false;
   if (!db) return; // sessão expirou durante o envio
   mesclarFila(); atualizarBarra(); if (!modalAberto()) render();
-  if (ok) toast(`✅ ${ok} pedido(s) feito(s) offline enviado(s) ao servidor`);
-  if (erros.length && !silencioso) alert(`${erros.length} pedido(s) foram recusados pelo servidor e continuam no aparelho para você corrigir:\n\n• ` + [...new Set(erros)].join('\n• '));
+  if (ok) toast(`✅ ${ok} registro(s) feito(s) offline enviado(s) ao servidor`);
+  if (erros.length && !silencioso) alert(`${erros.length} registro(s) foram recusados pelo servidor e continuam no aparelho para você corrigir:\n\n• ` + [...new Set(erros)].join('\n• '));
 }
 
 /* ---------- Estado da conexão ---------- */
@@ -95,11 +119,13 @@ window.addEventListener('offline', () => setOnline(false));
 function atualizarBarra() {
   const el = document.getElementById('offbar'); if (!el || !db) return;
   const fila = minhaFila(); const comErro = fila.filter(e => e.erro).length;
+  const np = fila.filter(e => !e.tipo).length, nv = fila.length - np;
+  const rot = [np ? `${np} pedido(s)` : '', nv ? `${nv} registro(s) de visita` : ''].filter(Boolean).join(' e ');
   const quando = OFF.snapEm ? new Date(OFF.snapEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
   let html = '';
-  if (!OFF.online) html = `<span>📴 <b>Sem internet</b> — mostrando os dados de ${quando}. Pedidos novos ficam salvos no aparelho${fila.length ? ` (<a style="cursor:pointer;text-decoration:underline" onclick="go('pedidos')">${fila.length} aguardando envio</a>)` : ''}.</span><span style="flex:1"></span><button class="btn sm" onclick="verificarConexao()">Tentar de novo</button>`;
+  if (!OFF.online) html = `<span>📴 <b>Sem internet</b> — mostrando os dados de ${quando}. Pedidos novos ficam salvos no aparelho${fila.length ? ` (<a style="cursor:pointer;text-decoration:underline" onclick="go('${np ? 'pedidos' : 'agenda'}')">${rot} aguardando envio</a>)` : ''}.</span><span style="flex:1"></span><button class="btn sm" onclick="verificarConexao()">Tentar de novo</button>`;
   else if (OFF.sincronizando) html = `<span>⏳ Enviando pedidos feitos offline…</span>`;
-  else if (fila.length) html = `<span>⏳ <a style="cursor:pointer;text-decoration:underline" onclick="go('pedidos')">${fila.length} pedido(s) feito(s) offline</a> aguardando envio${comErro ? ` — <b style="color:var(--bad)">${comErro} recusado(s), abra para corrigir</b>` : ''}.</span><span style="flex:1"></span><button class="btn sm pri" onclick="sincronizar()">Enviar agora</button>`;
+  else if (fila.length) html = `<span>⏳ <a style="cursor:pointer;text-decoration:underline" onclick="go('${np ? 'pedidos' : 'agenda'}')">${rot} feito(s) offline</a> aguardando envio${comErro ? ` — <b style="color:var(--bad)">${comErro} recusado(s), abra para corrigir</b>` : ''}.</span><span style="flex:1"></span><button class="btn sm pri" onclick="sincronizar()">Enviar agora</button>`;
   el.innerHTML = html; el.style.display = html ? 'flex' : 'none';
   el.style.background = !OFF.online ? 'var(--warn-soft)' : comErro ? 'var(--bad-soft)' : 'var(--pri-soft)';
 }

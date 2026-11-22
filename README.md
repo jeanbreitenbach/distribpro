@@ -46,7 +46,15 @@ As regras são aplicadas **no servidor**. Por exemplo: o cliente não consegue a
   - Há um XML fictício em `exemplos/nfe-compra-exemplo.xml` para testar com os dados de demonstração.
   - Cancelar a entrada estorna o estoque e remove as parcelas ainda não pagas.
 - **Contas a pagar**: despesas avulsas, parceladas (divide o valor) ou **fixas mensais** (repete o valor todo mês: aluguel, folha, internet...). A baixa registra a data, o valor pago (com juros ou desconto) e a forma de pagamento. Tem filtros por situação, categoria, fornecedor e período, e exportação para CSV.
-- **Fluxo de caixa**: entradas (a receber) × saídas (a pagar) previstas para 30, 60 ou 90 dias, por semana ou por dia. Informando o saldo atual, mostra o **saldo projetado**. Traz também o realizado dos últimos 30 dias, as despesas por categoria e os valores atrasados.
+- **Bancos e conciliação**: cadastro das contas bancárias (saldo inicial + extrato = saldo atual) e importação do **extrato OFX**, que todo banco exporta no internet banking.
+  - **Formatos aceitos**: OFX 1.x (SGML) e 2.x (XML), Latin-1 ou UTF-8, vírgula ou ponto decimal.
+  - **Repetições**: lançamentos já importados são ignorados (pelo FITID), e o saldo informado pelo banco é comparado com o calculado.
+  - **Sugestões**: para cada lançamento, o sistema sugere o título correspondente (mesmo valor, vencimento próximo, nome ou CNPJ na descrição) e tem o botão **Conciliar todos automaticamente**.
+  - **Conciliação manual**: aceita vários títulos para um lançamento (ex.: cliente pagou dois boletos num PIX) e diferença de juros ou desconto.
+  - **Ao conciliar**: os títulos recebem baixa na data do extrato. Tarifas, IOF e despesas sem título viram despesa paga com categoria. Rendimentos, transferências e aportes ficam classificados.
+  - **Desfazer**: reabre só o que a conciliação baixou.
+  - Há um extrato fictício em `exemplos/extrato-exemplo.ofx`.
+- **Fluxo de caixa**: entradas (a receber) × saídas (a pagar) previstas para 30, 60 ou 90 dias, por semana ou por dia. Parte da soma dos saldos bancários (ou de um saldo digitado) e mostra o **saldo projetado**. Traz também o realizado dos últimos 30 dias, as despesas por categoria e os valores atrasados.
 
 Vendedores e clientes não têm acesso a nenhuma dessas telas, e a API recusa as chamadas deles.
 
@@ -123,9 +131,10 @@ server.js          servidor HTTP, autenticação, permissões e API
 lib/regras.js      regras de negócio (compartilhadas com o navegador)
 lib/nfe.js         emissão de NF-e (simulada / Focus NFe)
 public/financeiro.js  fornecedores, compras, contas a pagar e fluxo de caixa
+public/bancos.js   contas bancárias, extrato OFX e conciliação
 lib/seed.js        dados de demonstração
 public/            interface web (HTML/CSS/JS, sem build)
-exemplos/          XML de NF-e fictício para testar a importação
+exemplos/          XML de NF-e e extrato OFX fictícios para testar as importações
 data/              banco SQLite (criado automaticamente)
 ```
 
@@ -133,4 +142,4 @@ data/              banco SQLite (criado automaticamente)
 
 - Todos os dados são mantidos em memória e gravados no SQLite. Funciona bem até algumas dezenas de milhares de pedidos; acima disso, o ideal é migrar para PostgreSQL com consultas paginadas.
 - O navegador recebe a base inteira do perfil a cada atualização (atualiza sozinho a cada 30 s).
-- Ainda não tem: emissão de boletos, conciliação bancária, busca automática das notas na SEFAZ (manifestação do destinatário), app offline para o vendedor, cancelamento de NF-e pelo sistema.
+- Ainda não tem: emissão de boletos, integração direta com a API dos bancos (Open Finance), busca automática das notas na SEFAZ (manifestação do destinatário), app offline para o vendedor, cancelamento de NF-e pelo sistema.

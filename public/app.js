@@ -64,7 +64,7 @@ function pages() {
   const p = [['sep', 'Vendas'], ['dashboard', '📊', 'Painel'], ['pedidos', '🧾', 'Pedidos'], ['catalogo', '🛒', 'Catálogo / Novo pedido'], ['clientes', '🏪', isVend() ? 'Minha carteira' : 'Clientes']];
   if (isAdmin()) p.push(['vendedores', '🧑‍💼', 'Vendedores']);
   if (isAdmin()) p.push(['sep', 'Compras e estoque'], ['produtos', '📦', 'Produtos'], ['estoque', '🏷️', 'Estoque'], ['compras', '🚚', 'Compras (NF de entrada)'], ['fornecedores', '🏭', 'Fornecedores'],
-    ['sep', 'Financeiro'], ['financeiro', '💰', 'Contas a receber'], ['pagar', '💸', 'Contas a pagar'], ['fluxo', '📉', 'Fluxo de caixa']);
+    ['sep', 'Financeiro'], ['financeiro', '💰', 'Contas a receber'], ['pagar', '💸', 'Contas a pagar'], ['bancos', '🏦', 'Bancos e conciliação'], ['fluxo', '📉', 'Fluxo de caixa']);
   else p.push(['sep', 'Operação'], ['produtos', '📦', 'Produtos'], ['financeiro', '💰', 'Contas a receber']);
   p.push(['sep', 'Gestão'], ['relatorios', '📈', 'Relatórios']);
   if (isAdmin()) p.push(['tabelas', '💲', 'Tabelas e condições'], ['usuarios', '🔐', 'Usuários e acessos'], ['config', '⚙️', 'Configurações']);

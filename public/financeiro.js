@@ -236,7 +236,7 @@ async function cancelarCompra(id) {
 
 /* ================== FLUXO DE CAIXA ================== */
 VIEWS.fluxo = () => {
-  const s = state; s.dias = s.dias || 30; s.saldo = s.saldo ?? '';
+  const s = state; s.dias = s.dias || 30; s.saldo = s.saldo ?? (db.bancos && db.bancos.length ? saldoBancos().toFixed(2) : '');
   const hoje = today(), fim = addDays(hoje, s.dias - 1);
   const rec = db.titulos.filter(t => !t.pago), pag = db.pagar.filter(t => !t.pago);
   const recVenc = somaV(rec.filter(t => t.vencimento < hoje)), pagVenc = somaV(pag.filter(t => t.vencimento < hoje));
@@ -268,7 +268,7 @@ VIEWS.fluxo = () => {
   }).join('')}</svg>`;
   $('#view').innerHTML = `<div class="filters">${[30, 60, 90].map(d => `<button class="btn ${s.dias === d ? 'pri' : ''}" onclick="state.dias=${d};render()">Próximos ${d} dias</button>`).join('')}
     <select onchange="state.modo=this.value;render()"><option value="semana">Por semana</option><option value="dia" ${porDia ? 'selected' : ''}>Por dia</option></select>
-    <input type="number" step="0.01" placeholder="Saldo atual em caixa/banco (R$)" value="${esc(s.saldo)}" onchange="state.saldo=this.value;render()" style="min-width:240px"></div>
+    <input type="number" step="0.01" placeholder="Saldo atual em caixa/banco (R$)" value="${esc(s.saldo)}" onchange="state.saldo=this.value;render()" style="min-width:240px" title="Saldo atual">${db.bancos && db.bancos.length ? `<span class="hint" style="align-self:center">saldo inicial = soma das contas bancárias (<a style="cursor:pointer" onclick="go('bancos')">ver</a>)</span>` : ''}</div>
   <div class="grid kpis" style="margin-bottom:14px">
    <div class="card kpi"><div class="l">Entradas previstas</div><div class="v" style="color:var(--ok)">${brl(totEnt)}</div><div class="s">contas a receber no período</div></div>
    <div class="card kpi"><div class="l">Saídas previstas</div><div class="v" style="color:var(--bad)">${brl(totSai)}</div><div class="s">contas a pagar no período</div></div>

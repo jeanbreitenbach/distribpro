@@ -16,7 +16,7 @@ const { seedDemo, baseVazia } = require('./lib/seed');
 
 const PORT = Number(process.env.PORT) || 3000;
 const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'data', 'distribpro.db');
-const COLS = ['produtos', 'clientes', 'vendedores', 'pedidos', 'movimentos', 'titulos', 'usuarios', 'condicoes', 'tabelas', 'fornecedores', 'pagar', 'compras'];
+const COLS = ['produtos', 'clientes', 'vendedores', 'pedidos', 'movimentos', 'titulos', 'usuarios', 'condicoes', 'tabelas', 'fornecedores', 'pagar', 'compras', 'bancos', 'extrato'];
 const uid = () => crypto.randomBytes(8).toString('hex');
 
 /* ================= Persistência ================= */
@@ -100,7 +100,7 @@ function visao(u) {
     return { ...base, clientes, produtos: db.produtos.map(semCusto), tabelas: db.tabelas,
       vendedores: db.vendedores.filter(v => v.id === u.vendedorId),
       pedidos: db.pedidos.filter(p => p.vendedorId === u.vendedorId || ids.has(p.clienteId)),
-      titulos: db.titulos.filter(t => ids.has(t.clienteId)), movimentos: [], usuarios: [], fornecedores: [], pagar: [], compras: [] };
+      titulos: db.titulos.filter(t => ids.has(t.clienteId)), movimentos: [], usuarios: [], fornecedores: [], pagar: [], compras: [], bancos: [], extrato: [] };
   }
   // cliente (portal B2B)
   const cli = R.find(db, 'clientes', u.clienteId);
@@ -108,7 +108,7 @@ function visao(u) {
   return { ...base, clientes: cli ? [cli] : [], produtos: db.produtos.filter(p => p.ativo !== 'Não').map(semCusto),
     tabelas: db.tabelas.filter(t => cli && t.id === cli.tabelaId),
     vendedores: v ? [{ id: v.id, nome: v.nome, telefone: v.telefone, email: v.email }] : [],
-    pedidos: db.pedidos.filter(p => p.clienteId === u.clienteId), titulos: db.titulos.filter(t => t.clienteId === u.clienteId), movimentos: [], usuarios: [], fornecedores: [], pagar: [], compras: [] };
+    pedidos: db.pedidos.filter(p => p.clienteId === u.clienteId), titulos: db.titulos.filter(t => t.clienteId === u.clienteId), movimentos: [], usuarios: [], fornecedores: [], pagar: [], compras: [], bancos: [], extrato: [] };
 }
 
 /* ================= Cadastros (campos permitidos) ================= */
@@ -118,11 +118,12 @@ const CAMPOS = {
   clientes: { razao: T, fantasia: T, cnpj: T, ie: T, telefone: T, email: T, logradouro: T, numero: T, bairro: T, cidade: T, uf: T, cep: T, vendedorId: T, tabelaId: T, condicaoId: T, limite: N, ativo: T },
   vendedores: { nome: T, email: T, telefone: T, comissao: N, meta: N, ativo: T },
   tabelas: { nome: T, ajuste: N },
+  bancos: { nome: T, banco: T, agencia: T, conta: T, saldoInicial: N, dataSaldo: T, ativo: T },
   fornecedores: { razao: T, fantasia: T, cnpj: T, ie: T, contato: T, telefone: T, email: T, cidade: T, uf: T, categoria: T, prazo: T, pix: T, banco: T, obs: T, ativo: T },
   condicoes: { nome: T, parcelas: T },
   usuarios: { nome: T, email: T, papel: T, vendedorId: T, clienteId: T, ativo: T },
 };
-const OBRIG = { produtos: 'nome', clientes: 'razao', vendedores: 'nome', tabelas: 'nome', fornecedores: 'razao', condicoes: 'nome', usuarios: 'email' };
+const OBRIG = { produtos: 'nome', clientes: 'razao', vendedores: 'nome', tabelas: 'nome', bancos: 'nome', fornecedores: 'razao', condicoes: 'nome', usuarios: 'email' };
 
 class Erro extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
 const exigir = (cond, msg = 'Sem permissão', st = 403) => { if (!cond) throw new Erro(st, msg); };
@@ -158,6 +159,7 @@ function salvarCadastro(u, col, body) {
 function excluirCadastro(u, col, id) {
   exigir(u.papel === 'admin'); exigir(CAMPOS[col], 'Coleção inválida', 404);
   const em = {
+    bancos: () => db.extrato.some(e => e.bancoId === id),
     fornecedores: () => db.compras.some(c => c.fornecedorId === id) || db.pagar.some(t => t.fornecedorId === id),
     vendedores: () => db.clientes.some(c => c.vendedorId === id) || db.pedidos.some(p => p.vendedorId === id) || db.usuarios.some(x => x.vendedorId === id),
     clientes: () => db.pedidos.some(p => p.clienteId === id) || db.usuarios.some(x => x.clienteId === id),
@@ -401,6 +403,73 @@ rota('POST', '/api/compras/:id/cancelar', (req, b, u, p) => {
   exigir(u.papel === 'admin'); const c = R.find(db, 'compras', p.id); exigir(c, 'Compra não encontrada', 404);
   exigir(c.status !== 'Cancelada', 'Compra já cancelada', 400);
   R.cancelarCompra(db, c, uid);
+}, { grava: true });
+
+/* ---- Bancos e conciliação ---- */
+const CATEGORIAS_ENTRADA = ['Rendimento de aplicação', 'Transferência entre contas', 'Aporte de sócio', 'Empréstimo / financiamento', 'Estorno / devolução', 'Outras receitas'];
+rota('POST', '/api/extrato/importar', (req, b, u) => {
+  exigir(u.papel === 'admin'); const banco = R.find(db, 'bancos', b.bancoId); exigir(banco, 'Selecione a conta bancária', 400);
+  const lista = Array.isArray(b.lancamentos) ? b.lancamentos : [];
+  exigir(lista.length, 'O extrato não tem lançamentos', 400);
+  exigir(lista.length <= 5000, 'Extrato muito grande (máx. 5000 lançamentos por arquivo)', 400);
+  const chaveL = l => l.fitid ? 'F' + l.fitid : `D${l.data}|${l.valor}|${l.descricao}`;
+  const existentes = new Set(db.extrato.filter(e => e.bancoId === banco.id).map(chaveL));
+  let novos = 0, duplicados = 0, ignorados = 0;
+  for (const x of lista) {
+    const l = { data: x.data, valor: R.r2(x.valor), descricao: txt(x.descricao, 200), fitid: txt(x.fitid, 80), documento: txt(x.documento, 40) };
+    if (!dataOk(l.data) || !l.valor) { ignorados++; continue; }
+    const k = chaveL(l); if (existentes.has(k)) { duplicados++; continue; }
+    existentes.add(k); novos++;
+    db.extrato.push({ id: uid(), bancoId: banco.id, ...l, conciliado: null, importadoEm: new Date().toISOString(), importadoPor: u.nome });
+  }
+  return { importacao: { novos, duplicados, ignorados } };
+}, { grava: true });
+rota('POST', '/api/extrato/:id/conciliar', (req, b, u, p) => {
+  exigir(u.papel === 'admin'); const e = db.extrato.find(x => x.id === p.id); exigir(e, 'Lançamento não encontrado', 404);
+  exigir(!e.conciliado, 'Lançamento já conciliado. Desfaça antes de conciliar de novo.', 400);
+  const info = { tipo: b.tipo, ids: [], baixou: [], criou: [], por: u.nome, em: new Date().toISOString() };
+  if (b.tipo === 'receber' || b.tipo === 'pagar') {
+    const col = b.tipo === 'receber' ? 'titulos' : 'pagar';
+    exigir(b.tipo === 'receber' ? e.valor > 0 : e.valor < 0, b.tipo === 'receber' ? 'Só créditos podem ser conciliados com contas a receber.' : 'Só débitos podem ser conciliados com contas a pagar.', 400);
+    const ids = [...new Set(Array.isArray(b.ids) ? b.ids : [])]; exigir(ids.length, 'Selecione pelo menos um título', 400);
+    const ts = ids.map(id => db[col].find(t => t.id === id)); exigir(ts.every(Boolean), 'Título não encontrado', 400);
+    exigir(!db.extrato.some(x => x.conciliado && x.conciliado.tipo === b.tipo && x.conciliado.ids.some(i => ids.includes(i))), 'Algum dos títulos já está conciliado com outro lançamento.', 400);
+    const soma = ts.reduce((s, t) => s + (t.pago ? (t.valorPago || t.valor) : t.valor), 0);
+    const dif = R.r2(Math.abs(e.valor) - soma);
+    if (Math.abs(dif) > 0.05 && !b.forcar) throw new Erro(409, `O lançamento (${Math.abs(e.valor).toFixed(2)}) difere da soma dos títulos (${soma.toFixed(2)}) em ${dif.toFixed(2)}.`, { diferenca: dif });
+    ts.forEach(t => {
+      if (t.pago) return; // já baixado manualmente: só vincula
+      t.pago = true; t.dataPagamento = e.data; t.bancoId = e.bancoId; t.baixadoPor = u.nome + ' (conciliação)';
+      const vp = ts.length === 1 ? Math.abs(e.valor) : t.valor;
+      if (col === 'pagar') { t.valorPago = R.r2(vp); t.formaPagamento = 'Débito em conta'; } else t.valorRecebido = R.r2(vp);
+      info.baixou.push(t.id);
+    });
+    info.ids = ids; info.diferenca = dif;
+  } else if (b.tipo === 'avulso') {
+    const cats = e.valor < 0 ? R.CATEGORIAS_PAGAR : CATEGORIAS_ENTRADA;
+    exigir(cats.includes(b.categoria), 'Selecione a categoria', 400);
+    info.categoria = b.categoria; info.descricao = txt(b.descricao, 200) || e.descricao;
+    if (e.valor < 0) { // despesa avulsa entra no contas a pagar já paga (aparece nos relatórios de despesa)
+      const t = { id: uid(), fornecedorId: R.find(db, 'fornecedores', b.fornecedorId) ? b.fornecedorId : '', descricao: info.descricao, categoria: b.categoria, documento: e.documento, parcela: '',
+        emissao: e.data, vencimento: e.data, valor: Math.abs(e.valor), pago: true, dataPagamento: e.data, valorPago: Math.abs(e.valor), formaPagamento: 'Débito em conta', bancoId: e.bancoId,
+        baixadoPor: u.nome + ' (conciliação)', origem: 'extrato', obs: '' };
+      db.pagar.push(t); info.criou.push(t.id);
+    }
+  } else throw new Erro(400, 'Tipo de conciliação inválido');
+  e.conciliado = info;
+}, { grava: true });
+rota('POST', '/api/extrato/:id/desfazer', (req, b, u, p) => {
+  exigir(u.papel === 'admin'); const e = db.extrato.find(x => x.id === p.id); exigir(e, 'Lançamento não encontrado', 404);
+  const c = e.conciliado; exigir(c, 'Lançamento não está conciliado', 400);
+  const col = c.tipo === 'receber' ? 'titulos' : 'pagar';
+  (c.baixou || []).forEach(id => { const t = db[col].find(x => x.id === id); if (t) Object.assign(t, { pago: false, dataPagamento: '', baixadoPor: '', bancoId: '', ...(col === 'pagar' ? { valorPago: 0, formaPagamento: '' } : { valorRecebido: 0 }) }); });
+  db.pagar = db.pagar.filter(t => !(c.criou || []).includes(t.id));
+  e.conciliado = null;
+}, { grava: true });
+rota('DELETE', '/api/extrato/:id', (req, b, u, p) => {
+  exigir(u.papel === 'admin'); const e = db.extrato.find(x => x.id === p.id); exigir(e, 'Lançamento não encontrado', 404);
+  exigir(!e.conciliado, 'Desfaça a conciliação antes de excluir.', 400);
+  db.extrato = db.extrato.filter(x => x.id !== p.id);
 }, { grava: true });
 
 rota('PUT', '/api/empresa', (req, b, u) => {

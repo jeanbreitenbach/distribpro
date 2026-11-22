@@ -4,6 +4,7 @@
  *   node server.js            → http://localhost:3000
  * Variáveis: PORT, DB_FILE, NFE_PROVEDOR, FOCUS_TOKEN, FOCUS_AMBIENTE
  */
+process.env.TZ = process.env.TZ || 'America/Sao_Paulo'; // datas do sistema no horário de Brasília (servidores de nuvem rodam em UTC)
 process.removeAllListeners('warning'); // silencia aviso "SQLite is experimental"
 const http = require('node:http');
 const fs = require('node:fs');
@@ -83,6 +84,7 @@ function lerToken(t) {
   return u;
 }
 const tentativas = new Map();
+setInterval(() => { const t = Date.now(); for (const [k, v] of tentativas) if (v.ate < t && v.n === 0) tentativas.delete(k); }, 10 * 60e3).unref();
 // Atrás de proxy (Render, Nginx...) o IP real vem em X-Forwarded-For
 const ipCliente = req => (process.env.TRUST_PROXY === '1' && String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()) || req.socket.remoteAddress;
 
@@ -239,13 +241,17 @@ function statusPedido(u, id, { status, forcar }) {
 /* ================= HTTP ================= */
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
 function enviar(res, status, obj, headers = {}) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers }); res.end(JSON.stringify(obj));
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers }); res.end(JSON.stringify(obj));
 }
 function lerCorpo(req) {
   return new Promise((ok, falha) => {
     let n = 0; const partes = [];
     req.on('data', c => { n += c.length; if (n > 50e6) { falha(new Erro(413, 'Requisição muito grande')); req.destroy(); } else partes.push(c); });
-    req.on('end', () => { try { ok(partes.length ? JSON.parse(Buffer.concat(partes).toString()) : {}); } catch { falha(new Erro(400, 'JSON inválido')); } });
+    req.on('end', () => {
+      let v; try { v = partes.length ? JSON.parse(Buffer.concat(partes).toString()) : {}; } catch { return falha(new Erro(400, 'JSON inválido')); }
+      if (v === null || typeof v !== 'object' || Array.isArray(v)) return falha(new Erro(400, 'Corpo da requisição inválido'));
+      ok(v);
+    });
   });
 }
 function estatico(req, res) {
@@ -254,7 +260,7 @@ function estatico(req, res) {
   else { if (f === '/' || !path.extname(f)) f = '/index.html'; f = path.join(__dirname, 'public', path.normalize(f)); if (!f.startsWith(path.join(__dirname, 'public'))) return enviar(res, 404, {}); }
   fs.readFile(f, (e, buf) => {
     if (e) return enviar(res, 404, { erro: 'Não encontrado' });
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff', 'Cache-Control': /\.(png|svg|ico)$/.test(f) ? 'public, max-age=86400' : 'no-cache' }); res.end(buf);
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'same-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self)', 'Cache-Control': /\.(png|svg|ico)$/.test(f) ? 'public, max-age=86400' : 'no-cache' }); res.end(buf);
   });
 }
 
@@ -262,16 +268,23 @@ const rotas = [];
 const rota = (m, p, fn, opts = {}) => rotas.push({ m, re: new RegExp('^' + p.replace(/:(\w+)/g, '(?<$1>[^/]+)') + '$'), fn, ...opts });
 
 rota('POST', '/api/login', (req, b) => {
-  const ip = ipCliente(req); const t = tentativas.get(ip) || { n: 0, ate: 0 };
-  if (t.ate > Date.now()) throw new Erro(429, 'Muitas tentativas. Aguarde alguns minutos.');
-  const u = db.usuarios.find(x => x.email === String(b.email || '').trim().toLowerCase());
+  // Limites: 8 erros seguidos para o mesmo e-mail+IP, ou 40 erros do mesmo IP → espera 5 min.
+  // (Só por IP bloquearia o escritório inteiro, que costuma sair pela mesma internet.)
+  const ip = ipCliente(req), email = String(b.email || '').trim().toLowerCase().slice(0, 120), agora = Date.now();
+  const kE = 'e|' + ip + '|' + email, kI = 'i|' + ip;
+  const tE = tentativas.get(kE) || { n: 0, ate: 0 }, tI = tentativas.get(kI) || { n: 0, ate: 0 };
+  if (tE.ate > agora || tI.ate > agora) throw new Erro(429, 'Muitas tentativas. Aguarde alguns minutos.');
+  const u = db.usuarios.find(x => x.email === email);
   if (!u || u.ativo === 'Não' || !conferirSenha(b.senha || '', u.senha)) {
-    t.n++; if (t.n >= 8) { t.ate = Date.now() + 5 * 60e3; t.n = 0; } tentativas.set(ip, t);
+    tE.n++; tI.n++;
+    if (tE.n >= 8) { tE.ate = agora + 5 * 60e3; tE.n = 0; }
+    if (tI.n >= 40) { tI.ate = agora + 5 * 60e3; tI.n = 0; }
+    tentativas.set(kE, tE); tentativas.set(kI, tI);
     throw new Erro(401, 'E-mail ou senha incorretos');
   }
-  tentativas.delete(ip); u.ultimoAcesso = new Date().toISOString();
+  tentativas.delete(kE); u.ultimoAcesso = new Date().toISOString();
   return { token: gerarToken(u), data: visao(u) };
-}, { publica: true, grava: true });
+}, { publica: true, grava: true, semRollback: true });
 
 rota('GET', '/api/health', () => ({ status: 'ok' }), { publica: true });
 rota('GET', '/api/data', () => null);
@@ -326,7 +339,7 @@ rota('PUT', '/api/pagar', (req, b, u) => {
   const grupo = uid();
   for (let k = 0; k < n; k++) {
     let venc = b.vencimento;
-    if (k) { if (intervalo === 30) { const d = new Date(b.vencimento + 'T12:00:00'); const dia = d.getDate(); d.setDate(1); d.setMonth(d.getMonth() + k); d.setDate(Math.min(dia, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate())); venc = d.toISOString().slice(0, 10); } else venc = R.addDays(b.vencimento, intervalo * k); }
+    if (k) { if (intervalo === 30) { const d = new Date(b.vencimento + 'T12:00:00'); const dia = d.getDate(); d.setDate(1); d.setMonth(d.getMonth() + k); d.setDate(Math.min(dia, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate())); venc = R.ymd(d); } else venc = R.addDays(b.vencimento, intervalo * k); }
     db.pagar.push({ id: uid(), grupo, ...base, parcela: n > 1 ? `${k + 1}/${n}` : '', vencimento: venc, valor: vals[k], pago: false, dataPagamento: '', valorPago: 0, criadoPor: u.nome });
   }
 }, { grava: true });
@@ -571,7 +584,10 @@ rota('POST', '/api/reset', (req, b, u) => {
   else { const d = baseVazia(); d.empresa = db.empresa; d.usuarios = db.usuarios.filter(x => x.papel === 'admin'); substituirTudo(d); }
 }, { grava: true });
 
+const qVersao = sql.prepare("SELECT value FROM meta WHERE key='alteracao_externa'");
+let versaoExterna = (qVersao.get() || {}).value;
 const server = http.createServer(async (req, res) => {
+  const ve = (qVersao.get() || {}).value; if (ve !== versaoExterna) { versaoExterna = ve; carregar(); } // banco alterado por fora (ex.: redefinir-senha)
   const url = new URL(req.url, 'http://x');
   if (!url.pathname.startsWith('/api/')) return estatico(req, res);
   const r = rotas.find(x => x.m === req.method && x.re.test(url.pathname));
@@ -585,10 +601,21 @@ const server = http.createServer(async (req, res) => {
     if (r.grava) persistir();
     enviar(res, 200, { ok: true, ...(out || {}), ...(u && !(out && out.data) ? { data: visao(u) } : {}) });
   } catch (e) {
-    if (!(e instanceof Erro)) { console.error(e); carregar(); } // erro inesperado: descarta alterações em memória
+    if (!(e instanceof Erro)) console.error(e);
+    if ((r.grava && !r.semRollback) || !(e instanceof Erro)) carregar(); // operação não concluída: volta ao último estado gravado (nada fica pela metade)
     enviar(res, e.status || 500, { erro: e instanceof Erro ? e.message : 'Erro interno', ...(e.extra || {}) });
   }
 });
+
+// ---- Linha de comando: node server.js redefinir-senha <email> <nova-senha> ----
+if (process.argv[2] === 'redefinir-senha') {
+  const [, , , email, nova] = process.argv;
+  if (!carregar()) { console.error('Banco ainda não criado. Inicie o servidor uma vez antes.'); process.exit(1); }
+  const u = db.usuarios.find(x => x.email === String(email || '').toLowerCase());
+  if (!u || !nova || nova.length < 8) { console.error('Uso: node server.js redefinir-senha <email> <nova-senha (mín. 8 caracteres)>' + (u || !email ? '' : `\nUsuário ${email} não encontrado.`)); process.exit(1); }
+  u.senha = hashSenha(nova); u.ativo = 'Sim'; persistir(); qMeta.run('alteracao_externa', JSON.stringify(Date.now()));
+  console.log(`Senha de ${u.email} (${u.papel}) redefinida. Sessões antigas foram encerradas.`); process.exit(0);
+}
 
 if (!carregar()) {
   // DADOS_INICIAIS=vazio → começa só com o administrador (recomendado em produção)
@@ -603,6 +630,31 @@ if (!carregar()) {
     ...d.usuarios.filter(x => x.papel !== 'admin')];
   substituirTudo(d);
 }
+// ---- Backup automático diário (cópia consistente do banco), mantém os últimos N dias ----
+const DIR_BACKUP = process.env.BACKUP_DIR || path.join(path.dirname(DB_FILE), 'backups');
+const MANTER = Math.max(1, Number(process.env.BACKUP_DIAS) || 14);
+function backupDiario() {
+  try {
+    fs.mkdirSync(DIR_BACKUP, { recursive: true });
+    const arq = path.join(DIR_BACKUP, `distribpro-${R.hoje()}.db`);
+    if (fs.existsSync(arq)) return;
+    sql.exec(`VACUUM INTO '${arq.replace(/'/g, "''")}'`);
+    const antigos = fs.readdirSync(DIR_BACKUP).filter(f => /^distribpro-\d{4}-\d{2}-\d{2}\.db$/.test(f)).sort().reverse().slice(MANTER);
+    antigos.forEach(f => fs.unlinkSync(path.join(DIR_BACKUP, f)));
+    console.log('Backup automático:', arq);
+  } catch (e) { console.error('Falha no backup automático:', e.message); }
+}
+if (process.env.BACKUP_DIAS !== '0') { setTimeout(backupDiario, 5000).unref(); setInterval(backupDiario, 60 * 60e3).unref(); }
+
+// ---- Desligamento seguro (deploy/reinício da hospedagem) ----
+let desligando = false;
+for (const sinal of ['SIGTERM', 'SIGINT']) process.on(sinal, () => {
+  if (desligando) return; desligando = true;
+  console.log('Encerrando com segurança...');
+  server.close(() => { try { sql.exec('PRAGMA wal_checkpoint(TRUNCATE)'); sql.close(); } catch (e) { } process.exit(0); });
+  setTimeout(() => process.exit(0), 8000).unref();
+});
+
 server.listen(PORT, () => {
   console.log(`\nDistribPro rodando em http://localhost:${PORT}`);
   console.log(`Banco: ${DB_FILE} · NF-e: ${NFE.provedor()}`);

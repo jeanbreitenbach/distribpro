@@ -135,6 +135,43 @@ Coloque um proxy com **HTTPS** na frente (Caddy, Nginx). Sem HTTPS, as senhas tr
 
 **Backup:** copie o arquivo do banco (no Render: o disco `/var/data`; no Docker: o volume `/data`) periodicamente, ou use **Configurações → Baixar backup**.
 
+## Operação e manutenção
+
+- **Backup automático**: todo dia o servidor grava uma cópia consistente do banco em `data/backups/` (no Render: `/var/data/backups/`) e mantém os últimos 14 dias. Para restaurar, pare o servidor e copie o arquivo do dia desejado sobre `distribpro.db`. Também há o backup manual em **Configurações → Baixar backup**.
+- **Esqueceu a senha do administrador?** Rode no servidor (no Render: aba *Shell*):
+  ```bash
+  node server.js redefinir-senha admin@suaempresa.com.br NovaSenhaForte123
+  ```
+  Funciona com o servidor ligado e encerra as sessões antigas daquele usuário.
+- **Fuso horário**: datas de pedidos, faturamento e vencimentos usam o horário de Brasília (`TZ=America/Sao_Paulo`), mesmo em servidores de nuvem que rodam em UTC.
+- **Atualizações**: com o Render ligado ao GitHub, cada envio para a branch `main` publica a nova versão sozinho. O desligamento é seguro (não perde dados) e o app no celular pega a versão nova na próxima abertura com internet.
+- **Segurança**: senhas com hash *scrypt*; sessões assinadas que expiram em 7 dias e caem ao trocar a senha; bloqueio temporário após 8 senhas erradas para o mesmo e-mail (ou 40 do mesmo IP); permissões checadas no servidor; operações que falham no meio não deixam dados pela metade.
+
+## Testes automáticos
+
+```bash
+npm test          # 20 testes de ponta a ponta da API (todos os módulos e permissões)
+npm run test:ui   # abre todas as telas e janelas dos 3 perfis no computador e no celular (requer Playwright)
+```
+
+Os testes sobem um servidor temporário com dados de demonstração. Não mexem no seu banco. Eles também rodam sozinhos no GitHub a cada envio (aba *Actions*).
+
+## Checklist para colocar em produção
+
+O que **já está pronto** no sistema: todos os módulos, os testes, o backup e a publicação configurada (`render.yaml`/Docker). O que **depende de você**:
+
+1. **Publicar** (≈ 10 min): criar a conta no Render e clicar no link de deploy da seção *Colocar no ar*, informando `ADMIN_EMAIL` e `ADMIN_SENHA`. Custo aproximado de US$ 7,25/mês.
+2. **Dados da empresa** em *Configurações* (razão social, CNPJ, IE, endereço). O CNPJ é usado para conferir as NF-e de compra e como emitente das notas.
+3. **Cadastros iniciais**: produtos (com NCM, para emitir NF-e), clientes (com endereço, dia e frequência de visita), vendedores, tabelas de preço e condições de pagamento, contas bancárias com o saldo inicial.
+4. **Logins** em *Usuários e acessos*: um por vendedor e, se quiser o portal B2B, um por cliente.
+5. **NF-e real** (opcional; sem isso as notas ficam em modo simulado):
+   1. Contratar a Focus NFe (ou outro emissor por API).
+   2. Enviar o **certificado digital A1** da empresa para eles.
+   3. **Validar com o contador** CFOP, CST/CSOSN e impostos em `lib/nfe.js`, que hoje seguem o padrão do Simples Nacional.
+   4. Configurar `NFE_PROVEDOR=focusnfe`, `FOCUS_TOKEN` e `FOCUS_AMBIENTE=homologacao`, testar e só então passar para `producao`.
+6. **Testar com arquivos reais**: importar 2 ou 3 XML de compra e um extrato OFX do seu banco, conferindo a tela antes de confirmar.
+7. **Instalar o app no celular** de um vendedor e fazer uma visita de teste, inclusive sem internet.
+
 ## Variáveis de ambiente
 
 | Variável | Padrão | Descrição |
@@ -147,6 +184,9 @@ Coloque um proxy com **HTTPS** na frente (Caddy, Nginx). Sem HTTPS, as senhas tr
 | `DADOS_INICIAIS` | `demo` | `vazio` para começar sem dados de demonstração (só na criação do banco) |
 | `ADMIN_EMAIL` | admin@distribpro.local | Login do administrador inicial (só na criação do banco) |
 | `ADMIN_SENHA` | admin123 | Senha do administrador inicial, mín. 8 caracteres (só na criação do banco) |
+| `TZ` | `America/Sao_Paulo` | Fuso horário das datas do sistema |
+| `BACKUP_DIAS` | `14` | Quantos backups diários manter (`0` desliga) |
+| `BACKUP_DIR` | `data/backups` | Pasta dos backups automáticos |
 | `TRUST_PROXY` | — | `1` quando estiver atrás de proxy/HTTPS, para identificar o IP real no bloqueio de login |
 
 ## Estrutura

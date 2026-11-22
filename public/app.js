@@ -172,7 +172,7 @@ VIEWS.dashboard = () => {
   const portal = abertos.filter(p => p.origem === 'Portal B2B' && p.status === 'Orçamento');
   const receber = db.titulos.filter(t => !t.pago); const venc = receber.filter(t => t.vencimento < today());
   const lucro = isAdmin() ? vMes.reduce((s, p) => s + p.itens.reduce((a, i) => { const pr = byId('produtos', i.produtoId); return a + i.qtd * (i.preco * (1 - (i.desc || 0) / 100) - (pr ? pr.custo : 0)); }, 0), 0) : 0;
-  const meses = []; for (let i = 5; i >= 0; i--) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); meses.push(d.toISOString().slice(0, 7)); }
+  const meses = []; for (let i = 5; i >= 0; i--) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); meses.push(Regras.ymd(d).slice(0, 7)); }
   const serie = meses.map(m => vend.filter(p => (p.faturamento || p.data).startsWith(m)).reduce((s, p) => s + totalPedido(p), 0));
   const mx = Math.max(...serie, 1); const W = 560, H = 200, bw = W / 6;
   const nomesMes = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];

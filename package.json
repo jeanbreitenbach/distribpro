@@ -1,10 +1,16 @@
 {
   "name": "distribpro",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Sistema de gestão para distribuidoras: pedidos, força de vendas, portal B2B, estoque, financeiro e NF-e",
   "main": "server.js",
-  "scripts": { "start": "node server.js" },
-  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests/api.test.js",
+    "test:ui": "node tests/ui.smoke.js"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
   "license": "UNLICENSED",
   "private": true
 }

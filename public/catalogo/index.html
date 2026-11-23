@@ -37,6 +37,8 @@ img{display:block;max-width:100%}
 .topo img{width:86px;height:auto;flex:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
 .topo h1{margin:0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(22px,4vw,32px);letter-spacing:.5px;line-height:1.1}
 .topo p{margin:4px 0 0;color:#f7dfe4;font-size:14px}
+.topo .fone{display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:#fff;font-weight:700;font-size:14px;text-decoration:none;border:1.5px solid rgba(255,255,255,.55);padding:2px 10px;border-radius:999px}
+.topo .fone:hover{background:rgba(255,255,255,.12)}
 .topo .local{display:inline-block;margin-top:8px;background:var(--amarelo);color:#3a2706;font-weight:700;font-size:12px;padding:3px 10px;border-radius:999px;letter-spacing:.3px}
 
 /* Barra de busca e categorias */
@@ -152,6 +154,7 @@ footer a{color:inherit}
       <h1>Catálogo de Produtos</h1>
       <p>Soluções em laticínios e ingredientes para o seu negócio.</p>
       <span class="local">ATENDEMOS FLORIANÓPOLIS E REGIÃO</span>
+      <a class="fone" id="zapTopo" target="_blank" rel="noopener" aria-label="WhatsApp (48) 98814-7567"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2Z"/></svg>(48) 98814-7567</a>
     </div>
   </div>
 </header>
@@ -229,6 +232,7 @@ footer a{color:inherit}
   const sem = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const zap = txt => `https://wa.me/${C.whatsapp}?text=${encodeURIComponent(txt)}`;
+  $('zapTopo').href = zap('Olá! Vim pelo catálogo da QdiQueijo e gostaria de mais informações.');
   $('zapRodape').href = zap('Olá! Vim pelo catálogo da QdiQueijo e gostaria de mais informações.');
 
   let categoria = 'Todas', termo = '', atual = null;

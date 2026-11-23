@@ -52,8 +52,8 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        // Voltar fecha a janela do produto, se estiver aberta; senão sai do app.
-        web.evaluateJavascript("(function(){var d=document.getElementById('janela');if(d&&d.open){d.close();return true}return false})()",
+        // Voltar fecha a janela aberta (produto ou carrinho); senão sai do app.
+        web.evaluateJavascript("(function(){var d=document.querySelector('dialog[open]');if(d){d.close();return true}return false})()",
             aberto -> { if (!"true".equals(aberto)) MainActivity.super.onBackPressed(); });
     }
 }

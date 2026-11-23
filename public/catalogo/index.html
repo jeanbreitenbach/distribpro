@@ -142,7 +142,48 @@ table.nutri tr.sub td:first-child{padding-left:20px}
 .btn-ped:hover{background:var(--verde-esc);border-color:var(--verde-esc)}
 .btn svg{flex:none}
 
-footer{text-align:center;color:var(--suave);font-size:13px;padding:10px 16px 40px}
+/* Carrinho */
+.btn-add{grid-column:1/-1;background:var(--vinho);color:#fff;border:2px solid var(--vinho);cursor:pointer;font:inherit;font-weight:750;font-size:15px}
+.btn-add:hover{background:var(--vinho-esc);border-color:var(--vinho-esc)}
+.so-este{grid-column:1/-1;font-size:12px;color:var(--suave);text-align:center;margin:2px 0 -4px}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;align-items:center;gap:10px;border:0;border-radius:999px;background:var(--vinho);color:#fff;padding:12px 18px 12px 14px;font-weight:750;font-size:15px;box-shadow:0 6px 20px rgba(60,20,10,.35);cursor:pointer}
+.fab[hidden]{display:none!important}
+.fab .qt{background:var(--amarelo);color:#3a2706;border-radius:999px;min-width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;padding:0 6px}
+.fab small{font-weight:600;opacity:.9}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#2a1d14;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+.car-lista{overflow-y:auto;padding:4px 16px 8px;flex:1}
+.car-topo{padding:16px 56px 10px 16px;border-bottom:1px solid var(--linha)}
+.car-topo h2{margin:0;font-family:Georgia,serif;font-size:21px}
+.car-topo p{margin:2px 0 0;color:var(--suave);font-size:13px}
+.item{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--linha)}
+.item .mini{width:56px;height:56px;border-radius:10px;background:var(--amarelo);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.item .mini img{width:100%;height:100%;object-fit:cover}
+.item .mini svg{color:#5a3d06;opacity:.6}
+.item .t{font-weight:650;font-size:14px;line-height:1.25}
+.item .s{font-size:12.5px;color:var(--suave);margin-top:2px}
+.item .sub{font-weight:800;color:var(--vinho);font-size:14px;margin-top:4px}
+:root[data-theme="dark"] .item .sub{color:var(--amarelo)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .item .sub{color:var(--amarelo)}}
+.item .ctl{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.item .passo button{width:34px;height:34px;font-size:18px}
+.item .passo input{width:52px;height:34px;font-size:15px}
+.item .passo span{padding-right:6px}
+.rem{border:0;background:none;color:var(--alerta);font-size:12.5px;font-weight:700;cursor:pointer;padding:2px 0}
+.car-vazio{text-align:center;color:var(--suave);padding:40px 10px}
+.car-dados{display:grid;gap:8px;padding:12px 0 4px}
+.car-dados label{font-size:12px;font-weight:700;color:var(--suave);text-transform:uppercase;letter-spacing:.4px}
+.car-dados input,.car-dados textarea{width:100%;border:1.5px solid var(--linha);border-radius:10px;padding:9px 11px;font:inherit;font-size:15px;background:var(--card);color:var(--texto);resize:vertical}
+.car-dados input:focus,.car-dados textarea:focus{outline:none;border-color:var(--vinho)}
+.car-total{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;font-size:15px}
+.car-total b{font-size:20px;color:var(--vinho)}
+:root[data-theme="dark"] .car-total b{color:var(--amarelo)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .car-total b{color:var(--amarelo)}}
+.car-total small{display:block;font-size:12px;color:var(--suave)}
+.limpar{border:0;background:none;color:var(--suave);font-size:13px;text-decoration:underline;cursor:pointer;margin-top:8px;width:100%}
+.btn.off{opacity:.45;pointer-events:none}
+
+footer{text-align:center;color:var(--suave);font-size:13px;padding:10px 16px 110px}
 footer a{color:inherit}
 </style>
 </head>
@@ -209,6 +250,11 @@ footer a{color:inherit}
         </div>
       </div>
       <div class="botoes">
+        <button type="button" class="btn btn-add" id="btnAdd">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.6 12.2a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.5L21.5 8H6"/></svg>
+          Adicionar ao carrinho
+        </button>
+        <div class="so-este">ou envie só este produto:</div>
         <a class="btn btn-orc" id="btnOrc" target="_blank" rel="noopener">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>
           Solicitar orçamento
@@ -218,6 +264,43 @@ footer a{color:inherit}
           Fazer pedido
         </a>
       </div>
+    </div>
+  </div>
+</dialog>
+
+<button class="fab" id="fab" hidden aria-label="Abrir carrinho">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.6 12.2a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.5L21.5 8H6"/></svg>
+  <span class="qt" id="fabQt">0</span>
+  <span>Carrinho <small id="fabTot"></small></span>
+</button>
+<div class="toast" id="toast" role="status"></div>
+
+<dialog id="carrinho" aria-labelledby="carTit">
+  <div class="janela">
+    <button class="fechar" id="carFechar" aria-label="Fechar">×</button>
+    <div class="car-topo"><h2 id="carTit">Seu carrinho</h2><p id="carResumo"></p></div>
+    <div class="car-lista">
+      <div id="carItens"></div>
+      <div class="car-dados" id="carDados">
+        <label for="carNome">Seu nome ou estabelecimento</label>
+        <input id="carNome" type="text" autocomplete="organization" placeholder="Ex.: Pizzaria do João">
+        <label for="carObs">Observações</label>
+        <textarea id="carObs" rows="2" placeholder="Endereço, melhor dia para entrega, forma de pagamento…"></textarea>
+      </div>
+    </div>
+    <div class="acoes">
+      <div class="car-total"><span>Total estimado<small>Itens em KG: valor final pelo peso</small></span><b id="carTotal">R$ 0,00</b></div>
+      <div class="botoes">
+        <a class="btn btn-orc" id="carOrc" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>
+          Solicitar orçamento
+        </a>
+        <a class="btn btn-ped" id="carPed" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2Z"/></svg>
+          Fazer pedido
+        </a>
+      </div>
+      <button type="button" class="limpar" id="carLimpar">Esvaziar carrinho</button>
     </div>
   </div>
 </dialog>
@@ -330,7 +413,99 @@ footer a{color:inherit}
   $('mais').addEventListener('click', () => passo(1));
   $('jQtd').addEventListener('input', links);
 
-  chips(); listar();
+  // ---------- Carrinho (fica guardado neste aparelho) ----------
+  const CHAVE = 'qdiqueijo-carrinho';
+  const idDe = p => `${p.codigo}|${p.nome}|${p.marca}`;
+  const ler = (k, padrao) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? padrao : v; } catch { return padrao; } };
+  const gravar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+  let carrinho = ler(CHAVE, []).map(x => ({ p: C.produtos.find(p => idDe(p) === x.id), q: Number(x.q) })).filter(x => x.p && x.q > 0);
+  const salvar = () => gravar(CHAVE, carrinho.map(x => ({ id: idDe(x.p), q: x.q })));
+  const qtdTxt = (q, p) => `${num(q, Number.isInteger(q) ? 0 : 1)} ${p.unidade}`;
+  const passoDe = p => p.unidade === 'KG' ? 0.5 : 1;
+  const totalCar = () => carrinho.reduce((t, x) => t + (x.p.preco || 0) * x.q, 0);
+  $('carNome').value = ler(CHAVE + '-nome', '');
+  $('carObs').value = ler(CHAVE + '-obs', '');
+
+  let tt;
+  function aviso(txt) { const t = $('toast'); t.textContent = txt; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), 1800); }
+
+  function atualizarFab() {
+    const n = carrinho.length;
+    $('fab').hidden = !n;
+    $('fabQt').textContent = n;
+    $('fabTot').textContent = n ? brl(totalCar()) : '';
+  }
+
+  function mensagemCarrinho(tipo) {
+    const linhas = carrinho.map((x, i) => {
+      const p = x.p;
+      return `${i + 1}. *${p.nome}*${p.marca !== '—' ? ' – ' + p.marca : ''}${p.codigo ? ` (cód. ${p.codigo})` : ''}\n` +
+        `   ${qtdTxt(x.q, p)}` + (p.preco != null ? ` × ${brl(p.preco)}/${p.unidade} = ${brl(p.preco * x.q)}` : ' · valor sob consulta');
+    }).join('\n');
+    const nome = $('carNome').value.trim(), obs = $('carObs').value.trim();
+    return `Olá, QdiQueijo! Gostaria de *${tipo === 'pedido' ? 'fazer um pedido' : 'solicitar um orçamento'}*:\n\n${linhas}\n\n*Total estimado:* ${brl(totalCar())}` +
+      (nome ? `\n*Cliente:* ${nome}` : '') + (obs ? `\n*Observações:* ${obs}` : '') +
+      (tipo === 'pedido' ? '\n\nAguardo a confirmação do pedido. Obrigado!' : '\n\nPoderiam me passar condições de pagamento e prazo de entrega?');
+  }
+
+  function desenharCarrinho() {
+    const vazio = !carrinho.length;
+    $('carResumo').textContent = vazio ? '' : `${carrinho.length} ${carrinho.length === 1 ? 'produto' : 'produtos'}`;
+    $('carItens').innerHTML = vazio
+      ? '<p class="car-vazio">Seu carrinho está vazio.<br>Abra um produto e toque em <b>Adicionar ao carrinho</b>.</p>'
+      : carrinho.map((x, i) => {
+        const p = x.p;
+        return `<div class="item" data-i="${i}">
+          <div class="mini">${p.imagem ? `<img src="${esc(p.imagem)}" alt="">` : iconeSem}</div>
+          <div><div class="t">${esc(p.nome)}</div><div class="s">${p.marca === '—' ? '' : esc(p.marca) + ' · '}${p.preco != null ? `${brl(p.preco)}/${p.unidade}` : 'Sob consulta'}</div>
+            <div class="sub">${p.preco != null ? brl(p.preco * x.q) : 'Sob consulta'}</div></div>
+          <div class="ctl"><div class="passo"><button type="button" data-a="menos" aria-label="Diminuir">−</button><input type="number" inputmode="decimal" value="${x.q}" aria-label="Quantidade de ${esc(p.nome)}"><span>${p.unidade}</span><button type="button" data-a="mais" aria-label="Aumentar">+</button></div>
+            <button type="button" class="rem" data-a="rem">Remover</button></div>
+        </div>`;
+      }).join('');
+    $('carDados').hidden = vazio;
+    $('carTotal').textContent = brl(totalCar());
+    ['carOrc', 'carPed'].forEach(id => $(id).classList.toggle('off', vazio));
+    $('carLimpar').hidden = vazio;
+    linksCarrinho();
+    atualizarFab();
+  }
+  function linksCarrinho() {
+    if (!carrinho.length) return;
+    $('carOrc').href = zap(mensagemCarrinho('orcamento'));
+    $('carPed').href = zap(mensagemCarrinho('pedido'));
+  }
+
+  $('btnAdd').addEventListener('click', () => {
+    if (!atual) return;
+    const q = qtd(), x = carrinho.find(x => x.p === atual);
+    if (x) x.q = Math.round((x.q + q) * 10) / 10; else carrinho.push({ p: atual, q });
+    salvar(); atualizarFab();
+    $('janela').close();
+    aviso('Adicionado ao carrinho');
+  });
+  $('fab').addEventListener('click', () => { desenharCarrinho(); $('carrinho').showModal(); });
+  $('carFechar').addEventListener('click', () => $('carrinho').close());
+  $('carrinho').addEventListener('click', e => { if (e.target === $('carrinho')) $('carrinho').close(); });
+  $('carItens').addEventListener('click', e => {
+    const b = e.target.closest('button[data-a]'); if (!b) return;
+    const i = +b.closest('.item').dataset.i, x = carrinho[i]; if (!x) return;
+    if (b.dataset.a === 'rem') carrinho.splice(i, 1);
+    else { const st = passoDe(x.p); x.q = Math.max(st, Math.round((x.q + (b.dataset.a === 'mais' ? st : -st)) * 10) / 10); }
+    salvar(); desenharCarrinho();
+  });
+  $('carItens').addEventListener('change', e => {
+    if (!e.target.matches('input')) return;
+    const i = +e.target.closest('.item').dataset.i, x = carrinho[i]; if (!x) return;
+    const v = parseFloat(String(e.target.value).replace(',', '.'));
+    x.q = v > 0 ? v : passoDe(x.p);
+    salvar(); desenharCarrinho();
+  });
+  $('carLimpar').addEventListener('click', () => { carrinho = []; salvar(); desenharCarrinho(); });
+  $('carNome').addEventListener('input', () => { gravar(CHAVE + '-nome', $('carNome').value); linksCarrinho(); });
+  $('carObs').addEventListener('input', () => { gravar(CHAVE + '-obs', $('carObs').value); linksCarrinho(); });
+
+  chips(); listar(); atualizarFab();
 })();
 </script>
 </body>

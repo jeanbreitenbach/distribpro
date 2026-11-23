@@ -740,7 +740,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "284",
-   "nome": "Costela Suína Plus sem Pele (Congelada)",
+   "nome": "Costela Suína Plus (Congelada)",
    "marca": "Rothenburg (RTB)",
    "embalagem": "Peça",
    "categoria": "Frios & Embutidos",

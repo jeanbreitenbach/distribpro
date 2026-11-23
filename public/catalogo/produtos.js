@@ -227,9 +227,9 @@ window.CATALOGO = {
   },
   {
    "codigo": "339",
-   "nome": "Queijo Parmesão Argentino",
+   "nome": "Queijo Parmesão Argentino 5 kg",
    "marca": "El Maestro",
-   "embalagem": "Peça",
+   "embalagem": "Peça 5 kg",
    "categoria": "Queijos",
    "preco": 70.61,
    "unidade": "KG",

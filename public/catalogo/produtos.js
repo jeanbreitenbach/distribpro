@@ -892,7 +892,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "211",
-   "nome": "Peito de Frango Defumado Fatiado",
+   "nome": "Peito de Frango Defumado Fatiado 1 kg",
    "marca": "Bonatti",
    "embalagem": "Pacote 1 kg",
    "categoria": "Frios & Embutidos",

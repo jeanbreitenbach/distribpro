@@ -246,7 +246,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "183",
-   "nome": "Queijo Parmesão Inteiro",
+   "nome": "Queijo Parmesão Inteiro 5 kg",
    "marca": "Talento Mineiro",
    "embalagem": "Peça 5 kg",
    "categoria": "Queijos",

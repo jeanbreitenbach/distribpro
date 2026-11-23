@@ -360,7 +360,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "178",
-   "nome": "Cheddar Cremoso",
+   "nome": "Cheddar Cremoso Bisnaga 1,010 kg",
    "marca": "Alcremo",
    "embalagem": "Bisnaga 1,010 kg",
    "categoria": "Laticínios & Cremosos",

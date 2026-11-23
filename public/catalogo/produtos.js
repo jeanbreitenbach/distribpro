@@ -1329,7 +1329,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "13",
-   "nome": "Framboesa Congelada",
+   "nome": "Framboesa Congelada 1 kg",
    "marca": "—",
    "embalagem": "Pacote 1 kg",
    "categoria": "Frutas Congeladas",
@@ -1348,7 +1348,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "233",
-   "nome": "Morango Congelado",
+   "nome": "Morango Congelado 1 kg",
    "marca": "—",
    "embalagem": "Pacote 1 kg",
    "categoria": "Frutas Congeladas",

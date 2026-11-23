@@ -239,7 +239,7 @@ function statusPedido(u, id, { status, forcar }) {
 }
 
 /* ================= HTTP ================= */
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
 function enviar(res, status, obj, headers = {}) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers }); res.end(JSON.stringify(obj));
 }
@@ -257,10 +257,10 @@ function lerCorpo(req) {
 function estatico(req, res) {
   let f = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (f === '/regras.js') f = path.join(__dirname, 'lib', 'regras.js');
-  else { if (f === '/' || !path.extname(f)) f = '/index.html'; f = path.join(__dirname, 'public', path.normalize(f)); if (!f.startsWith(path.join(__dirname, 'public'))) return enviar(res, 404, {}); }
+  else { if (f === '/catalogo') { res.writeHead(301, { Location: '/catalogo/' }); return res.end(); } if (f === '/catalogo/') f = '/catalogo/index.html'; else if (f === '/' || !path.extname(f)) f = '/index.html'; f = path.join(__dirname, 'public', path.normalize(f)); if (!f.startsWith(path.join(__dirname, 'public'))) return enviar(res, 404, {}); }
   fs.readFile(f, (e, buf) => {
     if (e) return enviar(res, 404, { erro: 'Não encontrado' });
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'same-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self)', 'Cache-Control': /\.(png|svg|ico)$/.test(f) ? 'public, max-age=86400' : 'no-cache' }); res.end(buf);
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'same-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self)', 'Cache-Control': /\.(png|jpg|svg|ico)$/.test(f) ? 'public, max-age=86400' : 'no-cache' }); res.end(buf);
   });
 }
 
@@ -287,6 +287,8 @@ rota('POST', '/api/login', (req, b) => {
 }, { publica: true, grava: true, semRollback: true });
 
 rota('GET', '/api/health', () => ({ status: 'ok' }), { publica: true });
+// Catálogo público (/catalogo): saldo de estoque por código, só dos produtos ativos. Não expõe custo nem outros dados.
+rota('GET', '/api/catalogo/estoque', () => { const m = {}; db.produtos.forEach(p => { if (p.codigo && p.ativo !== 'Não') m[p.codigo] = Number(p.estoque) || 0; }); return m; }, { publica: true });
 rota('GET', '/api/data', () => null);
 rota('POST', '/api/senha', (req, b, u) => {
   exigir(conferirSenha(b.atual || '', u.senha), 'Senha atual incorreta', 400);

@@ -1,6 +1,6 @@
 /* DistribPro — service worker: guarda as telas do app para abrir sem internet.
    Os dados (API) não passam por aqui: o app guarda a última cópia no IndexedDB. */
-const VERSAO = 'distribpro-v2';
+const VERSAO = 'distribpro-v3';
 const ARQUIVOS = ['/', '/index.html', '/style.css', '/regras.js', '/app.js', '/financeiro.js', '/bancos.js', '/visitas.js', '/offline.js', '/manifest.webmanifest',
   '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png'];
 
@@ -13,7 +13,7 @@ self.addEventListener('activate', e => {
 // Rede primeiro (sempre a versão mais nova quando há internet); sem rede ou rede lenta (>4s), usa a cópia guardada.
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  if (e.request.method !== 'GET' || url.origin !== location.origin || url.pathname.startsWith('/api/')) return;
+  if (e.request.method !== 'GET' || url.origin !== location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/catalogo')) return; // o catálogo público não é cacheado aqui
   const chave = e.request.mode === 'navigate' ? '/index.html' : url.pathname;
   e.respondWith((async () => {
     const cache = await caches.open(VERSAO);

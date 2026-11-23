@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Catálogo QdiQueijo</title>
+<meta name="description" content="Catálogo de laticínios, frios e ingredientes da QdiQueijo. Florianópolis e região.">
+<meta name="theme-color" content="#9e1f35">
+<link rel="icon" href="img/logo.png">
+<style>
+:root{
+  --vinho:#9e1f35; --vinho-esc:#7a1528; --amarelo:#e9b92a; --amarelo-claro:#f7e3a1;
+  --bg:#faf6ee; --card:#ffffff; --texto:#2a1d14; --suave:#6f6257; --linha:#ebe2d2;
+  --verde:#1f9d55; --verde-esc:#17803f; --alerta:#c0392b; --ok:#1f8a4c;
+  --sombra:0 1px 2px rgba(60,30,10,.06),0 6px 18px rgba(60,30,10,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1412; --card:#261c19; --texto:#f4ece2; --suave:#bfae9f; --linha:#3a2c27;
+    --amarelo-claro:#4a3a12; --sombra:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1412; --card:#261c19; --texto:#f4ece2; --suave:#bfae9f; --linha:#3a2c27;
+  --amarelo-claro:#4a3a12; --sombra:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--texto);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+img{display:block;max-width:100%}
+
+/* Cabeçalho */
+.topo{background:var(--vinho);color:#fff;padding:18px 16px 22px;position:relative;overflow:hidden}
+.topo::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--amarelo)}
+.topo-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:16px}
+.topo img{width:86px;height:auto;flex:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
+.topo h1{margin:0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(22px,4vw,32px);letter-spacing:.5px;line-height:1.1}
+.topo p{margin:4px 0 0;color:#f7dfe4;font-size:14px}
+.topo .local{display:inline-block;margin-top:8px;background:var(--amarelo);color:#3a2706;font-weight:700;font-size:12px;padding:3px 10px;border-radius:999px;letter-spacing:.3px}
+
+/* Barra de busca e categorias */
+.barra{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--linha)}
+.barra-in{max-width:1180px;margin:0 auto;padding:12px 16px 10px}
+.busca{position:relative}
+.busca input{width:100%;padding:12px 14px 12px 42px;border:1.5px solid var(--linha);border-radius:12px;background:var(--card);color:var(--texto);font-size:16px;outline:none}
+.busca input:focus{border-color:var(--vinho)}
+.busca svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--suave)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1.5px solid var(--linha);background:var(--card);padding:7px 13px;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--vinho);border-color:var(--vinho);color:#fff}
+.chip small{opacity:.7;margin-left:4px}
+
+/* Grade */
+main{max-width:1180px;margin:0 auto;padding:6px 16px 60px}
+.secao{margin-top:22px}
+.secao h2{display:flex;align-items:center;gap:10px;font-family:Georgia,serif;font-size:20px;color:var(--vinho);margin:0 0 12px}
+:root[data-theme="dark"] .secao h2{color:var(--amarelo)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .secao h2{color:var(--amarelo)}}
+.secao h2::before{content:"";width:6px;height:22px;background:var(--amarelo);border-radius:3px}
+.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
+@media (max-width:420px){.grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+.card{all:unset;box-sizing:border-box;display:flex;flex-direction:column;background:var(--card);border-radius:14px;overflow:hidden;box-shadow:var(--sombra);cursor:pointer;transition:transform .15s,box-shadow .15s;border:1px solid var(--linha)}
+.card:hover{transform:translateY(-2px);box-shadow:0 2px 4px rgba(60,30,10,.08),0 12px 26px rgba(60,30,10,.14)}
+.card:focus-visible{outline:3px solid var(--vinho);outline-offset:2px}
+.foto{aspect-ratio:1/1;background:var(--amarelo);display:flex;align-items:center;justify-content:center;position:relative}
+.foto img{width:100%;height:100%;object-fit:cover}
+.sem{font-family:Georgia,serif;font-weight:700;color:#5a3d06;text-align:center;padding:12px;font-size:15px;line-height:1.2;display:flex;flex-direction:column;align-items:center;gap:6px}
+.sem svg{opacity:.55}
+.selo{position:absolute;top:8px;left:8px;background:rgba(255,255,255,.92);color:#5a3d06;font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px}
+.info{padding:10px 11px 12px;display:flex;flex-direction:column;gap:3px;flex:1}
+.nome{font-weight:650;font-size:14px;line-height:1.25}
+.marca{font-size:12.5px;color:var(--suave)}
+.preco{margin-top:auto;padding-top:6px;font-weight:800;color:var(--vinho);font-size:17px}
+:root[data-theme="dark"] .preco{color:var(--amarelo)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .preco{color:var(--amarelo)}}
+.preco small{font-weight:600;font-size:12px;color:var(--suave)}
+.vazio{text-align:center;color:var(--suave);padding:50px 10px}
+
+/* Janela do produto */
+dialog{border:0;padding:0;background:transparent;max-width:none;max-height:none;width:100%;height:100%;margin:0}
+dialog::backdrop{background:rgba(30,12,8,.55)}
+.janela{position:fixed;inset:auto 0 0 0;max-height:94dvh;background:var(--card);color:var(--texto);border-radius:20px 20px 0 0;display:flex;flex-direction:column;overflow:hidden;animation:sobe .22s ease-out}
+@media (min-width:760px){
+  .janela{inset:50% auto auto 50%;transform:translate(-50%,-50%);width:min(860px,94vw);max-height:90vh;border-radius:20px;animation:surge .18s ease-out}
+}
+@keyframes sobe{from{transform:translateY(40px);opacity:.4}}
+@keyframes surge{from{opacity:0;transform:translate(-50%,-48%)}}
+.fechar{position:absolute;top:10px;right:10px;z-index:2;width:38px;height:38px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:22px;line-height:1;cursor:pointer}
+.corpo{overflow-y:auto;display:grid;grid-template-columns:1fr}
+@media (min-width:760px){.corpo{grid-template-columns:minmax(0,0.9fr) minmax(0,1.1fr)}}
+.j-foto{background:var(--amarelo);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center}
+@media (max-width:759px){.j-foto{aspect-ratio:auto;height:min(34dvh,300px)}}
+@media (min-width:760px){.j-foto{aspect-ratio:auto;min-height:100%}}
+.j-foto img{width:100%;height:100%;object-fit:contain}
+.j-info{padding:18px 18px 8px}
+.j-cod{font-size:12px;font-weight:700;color:var(--suave);letter-spacing:.5px;text-transform:uppercase}
+.j-nome{margin:4px 0 2px;font-size:21px;line-height:1.2;font-family:Georgia,serif}
+.j-marca{color:var(--suave);font-size:14px}
+.linha2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.box{border:1px solid var(--linha);border-radius:12px;padding:10px 12px}
+.box .rot{font-size:12px;color:var(--suave);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.box .val{font-size:20px;font-weight:800;margin-top:2px}
+.box .val small{font-size:13px;font-weight:600;color:var(--suave)}
+.preco-box .val{color:var(--vinho)}
+:root[data-theme="dark"] .preco-box .val{color:var(--amarelo)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .preco-box .val{color:var(--amarelo)}}
+.est{display:flex;align-items:center;gap:7px;font-size:16px!important}
+.pt{width:10px;height:10px;border-radius:50%;flex:none;background:var(--suave)}
+.est.disp .pt{background:var(--ok)} .est.baixo .pt{background:var(--amarelo)} .est.zero .pt{background:var(--alerta)}
+.emb{font-size:14px;color:var(--suave);margin:-4px 0 12px}
+.emb b{color:var(--texto)}
+
+table.nutri{width:100%;border-collapse:collapse;font-size:14px;border:2px solid var(--texto)}
+table.nutri caption{text-align:left;font-weight:800;font-size:15px;padding:0 0 6px}
+table.nutri th,table.nutri td{padding:6px 8px;border-bottom:1px solid var(--linha);text-align:left}
+table.nutri thead th{border-bottom:2px solid var(--texto);font-size:12px;text-transform:uppercase;letter-spacing:.3px}
+table.nutri td:not(:first-child),table.nutri th:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+table.nutri tr.sub td:first-child{padding-left:20px}
+.nota{font-size:12px;color:var(--suave);margin:8px 0 4px}
+
+.acoes{border-top:1px solid var(--linha);padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--card)}
+.qtd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.qtd label{font-weight:650;font-size:14px}
+.passo{display:flex;align-items:center;border:1.5px solid var(--linha);border-radius:12px;overflow:hidden}
+.passo button{width:42px;height:40px;border:0;background:transparent;font-size:20px;cursor:pointer}
+.passo button:hover{background:var(--linha)}
+.passo input{width:64px;height:40px;border:0;text-align:center;font-size:16px;font-weight:700;background:transparent;color:var(--texto);-moz-appearance:textfield}
+.passo input::-webkit-outer-spin-button,.passo input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.passo span{padding-right:10px;color:var(--suave);font-size:13px;font-weight:600}
+.botoes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;border-radius:12px;font-weight:750;font-size:15px;text-decoration:none;text-align:center;padding:8px 10px;line-height:1.15}
+.btn-orc{border:2px solid var(--verde);color:var(--verde);background:transparent}
+.btn-orc:hover{background:color-mix(in srgb,var(--verde) 10%,transparent)}
+.btn-ped{background:var(--verde);color:#fff;border:2px solid var(--verde)}
+.btn-ped:hover{background:var(--verde-esc);border-color:var(--verde-esc)}
+.btn svg{flex:none}
+
+footer{text-align:center;color:var(--suave);font-size:13px;padding:10px 16px 40px}
+footer a{color:inherit}
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="topo-in">
+    <img src="img/logo.png" alt="QdiQueijo">
+    <div>
+      <h1>Catálogo de Produtos</h1>
+      <p>Soluções em laticínios e ingredientes para o seu negócio.</p>
+      <span class="local">ATENDEMOS FLORIANÓPOLIS E REGIÃO</span>
+    </div>
+  </div>
+</header>
+
+<div class="barra">
+  <div class="barra-in">
+    <div class="busca">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="busca" type="search" placeholder="Buscar produto, marca ou código…" autocomplete="off" aria-label="Buscar produto">
+    </div>
+    <div class="chips" id="chips" role="toolbar" aria-label="Categorias"></div>
+  </div>
+</div>
+
+<main id="lista" aria-live="polite"></main>
+
+<footer>
+  Preços da tabela de venda sujeitos a alteração sem aviso prévio. Produtos em KG têm o valor final calculado pelo peso.<br>
+  Pedidos e orçamentos pelo WhatsApp <a id="zapRodape" target="_blank" rel="noopener">(48) 98814-7567</a>
+</footer>
+
+<dialog id="janela" aria-labelledby="jNome">
+  <div class="janela">
+    <button class="fechar" id="fechar" aria-label="Fechar">×</button>
+    <div class="corpo">
+      <div class="j-foto" id="jFoto"></div>
+      <div class="j-info">
+        <div class="j-cod" id="jCod"></div>
+        <h2 class="j-nome" id="jNome"></h2>
+        <div class="j-marca" id="jMarca"></div>
+        <div class="linha2">
+          <div class="box preco-box"><div class="rot">Valor</div><div class="val" id="jPreco"></div></div>
+          <div class="box"><div class="rot">Estoque</div><div class="val est" id="jEst"></div></div>
+        </div>
+        <div class="emb" id="jEmb"></div>
+        <table class="nutri">
+          <caption>Informação nutricional</caption>
+          <thead><tr><th>Porção de 100 g</th><th>Quantidade</th><th>%VD*</th></tr></thead>
+          <tbody id="jNutri"></tbody>
+        </table>
+        <p class="nota">*Percentual de valores diários fornecidos por 100 g, com base em uma dieta de 2.000 kcal. Valores aproximados de referência; confira o rótulo do fabricante.</p>
+      </div>
+    </div>
+    <div class="acoes">
+      <div class="qtd">
+        <label for="jQtd">Quantidade</label>
+        <div class="passo">
+          <button type="button" id="menos" aria-label="Diminuir">−</button>
+          <input id="jQtd" type="number" inputmode="decimal" min="1" step="1" value="1">
+          <span id="jUn">KG</span>
+          <button type="button" id="mais" aria-label="Aumentar">+</button>
+        </div>
+      </div>
+      <div class="botoes">
+        <a class="btn btn-orc" id="btnOrc" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>
+          Solicitar orçamento
+        </a>
+        <a class="btn btn-ped" id="btnPed" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2Zm5.8 14.07c-.24.68-1.42 1.31-1.96 1.36-.5.05-.98.23-3.3-.69-2.8-1.1-4.56-3.96-4.7-4.15-.14-.18-1.13-1.5-1.13-2.86 0-1.36.71-2.03.97-2.31.25-.27.55-.34.73-.34h.53c.17 0 .4-.06.62.48.24.56.8 1.94.87 2.08.07.14.12.3.02.48-.09.18-.14.3-.27.46l-.41.48c-.14.14-.28.29-.12.57.16.27.71 1.17 1.53 1.9 1.05.94 1.94 1.23 2.21 1.37.28.14.44.12.6-.07.17-.18.7-.81.88-1.09.18-.28.37-.23.62-.14.25.09 1.6.76 1.88.9.27.13.46.2.52.32.07.11.07.66-.17 1.33Z"/></svg>
+          Fazer pedido
+        </a>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script src="produtos.js"></script>
+<script>
+(() => {
+  const C = window.CATALOGO;
+  const $ = id => document.getElementById(id);
+  const brl = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const num = (v, d = 1) => v.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const sem = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const zap = txt => `https://wa.me/${C.whatsapp}?text=${encodeURIComponent(txt)}`;
+  $('zapRodape').href = zap('Olá! Vim pelo catálogo da QdiQueijo e gostaria de mais informações.');
+
+  let categoria = 'Todas', termo = '', atual = null;
+
+  // Estoque ao vivo: quando o catálogo roda junto com o DistribPro, busca o saldo pelo código do produto.
+  fetch('/api/catalogo/estoque', { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : null)
+    .then(m => { if (!m || typeof m !== 'object') return; C.produtos.forEach(p => { if (m[p.codigo] != null) p.estoque = Number(m[p.codigo]); }); if (atual) preencher(atual); })
+    .catch(() => {});
+
+  const iconeSem = '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 14 14 5l7 4v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 14h18"/><circle cx="9" cy="16.5" r="1"/><circle cx="15" cy="11" r="1"/></svg>';
+  const foto = (p, grande) => p.imagem
+    ? `<img src="${esc(p.imagem)}" alt="${esc(p.nome)}" loading="${grande ? 'eager' : 'lazy'}">`
+    : `<div class="sem">${iconeSem}<span>${esc(p.nome)}</span></div>`;
+  const precoTxt = p => p.preco == null ? 'Sob consulta' : `${brl(p.preco)}<small>/${p.unidade}</small>`;
+
+  function chips() {
+    const cont = { Todas: C.produtos.length };
+    C.produtos.forEach(p => cont[p.categoria] = (cont[p.categoria] || 0) + 1);
+    $('chips').innerHTML = ['Todas', ...C.categorias].map(c =>
+      `<button class="chip" aria-pressed="${c === categoria}" data-c="${esc(c)}">${esc(c)}<small>${cont[c] || 0}</small></button>`).join('');
+  }
+
+  function listar() {
+    const t = sem(termo.trim());
+    const filtro = C.produtos.filter(p => (categoria === 'Todas' || p.categoria === categoria) &&
+      (!t || sem(`${p.nome} ${p.marca} ${p.codigo} ${p.categoria}`).includes(t)));
+    if (!filtro.length) { $('lista').innerHTML = '<p class="vazio">Nenhum produto encontrado.</p>'; return; }
+    const cats = C.categorias.filter(c => filtro.some(p => p.categoria === c));
+    $('lista').innerHTML = cats.map(c => `<section class="secao"><h2>${esc(c)}</h2><div class="grade">${
+      filtro.filter(p => p.categoria === c).map(p => `
+        <button class="card" data-cod="${esc(p.codigo)}" aria-label="${esc(p.nome)} ${esc(p.marca)}">
+          <div class="foto">${foto(p)}<span class="selo">Cód. ${esc(p.codigo)}</span></div>
+          <div class="info"><div class="nome">${esc(p.nome)}</div><div class="marca">${esc(p.marca)}</div><div class="preco">${precoTxt(p)}</div></div>
+        </button>`).join('')}</div></section>`).join('');
+  }
+
+  const VD = { kcal: 2000, carboidratos: 300, proteinas: 50, gordurasTotais: 65, gordurasSaturadas: 20, sodio: 2000 };
+  function preencher(p) {
+    $('jFoto').innerHTML = foto(p, true);
+    $('jCod').textContent = `Código ${p.codigo} · ${p.categoria}`;
+    $('jNome').textContent = p.nome;
+    $('jMarca').textContent = p.marca === '—' ? '' : `Marca: ${p.marca}`;
+    $('jPreco').innerHTML = precoTxt(p);
+    const e = $('jEst');
+    if (p.estoque == null) { e.className = 'val est'; e.innerHTML = '<span class="pt"></span>Consultar'; }
+    else if (p.estoque <= 0) { e.className = 'val est zero'; e.innerHTML = '<span class="pt"></span>Sem estoque'; }
+    else { e.className = 'val est ' + (p.estoque < 5 ? 'baixo' : 'disp'); e.innerHTML = `<span class="pt"></span>${num(p.estoque, Number.isInteger(p.estoque) ? 0 : 1)} <small>${p.unidade}</small>`; }
+    $('jEmb').innerHTML = `Embalagem: <b>${esc(p.embalagem)}</b>${p.unidade === 'KG' && p.preco != null ? ' · preço por quilo' : ''}`;
+    const n = p.nutricao, kj = Math.round(n.kcal * 4.184);
+    const lin = (rot, v, un, vd, sub) => `<tr${sub ? ' class="sub"' : ''}><td>${rot}</td><td>${v} ${un}</td><td>${vd == null ? '—' : Math.round(vd) + '%'}</td></tr>`;
+    $('jNutri').innerHTML =
+      lin('Valor energético', `${Math.round(n.kcal)} kcal = ${kj}`, 'kJ', n.kcal / VD.kcal * 100) +
+      lin('Carboidratos', num(n.carboidratos), 'g', n.carboidratos / VD.carboidratos * 100) +
+      lin('Proteínas', num(n.proteinas), 'g', n.proteinas / VD.proteinas * 100) +
+      lin('Gorduras totais', num(n.gordurasTotais), 'g', n.gordurasTotais / VD.gordurasTotais * 100) +
+      lin('Gorduras saturadas', num(n.gordurasSaturadas), 'g', n.gordurasSaturadas / VD.gordurasSaturadas * 100, true) +
+      lin('Sódio', Math.round(n.sodio).toLocaleString('pt-BR'), 'mg', n.sodio / VD.sodio * 100);
+    $('jUn').textContent = p.unidade;
+    links();
+  }
+
+  function qtd() { const v = parseFloat(String($('jQtd').value).replace(',', '.')); return v > 0 ? v : 1; }
+  function links() {
+    const p = atual; if (!p) return;
+    const q = qtd(), qs = `${num(q, Number.isInteger(q) ? 0 : 1)} ${p.unidade}`;
+    const base = [
+      `*Produto:* ${p.nome}${p.marca !== '—' ? ' – ' + p.marca : ''}`,
+      `*Código:* ${p.codigo}`,
+      `*Embalagem:* ${p.embalagem}`,
+      `*Quantidade:* ${qs}`,
+      p.preco != null ? `*Valor de tabela:* ${brl(p.preco)}/${p.unidade}` : '*Valor:* sob consulta',
+      p.preco != null ? `*Total estimado:* ${brl(p.preco * q)}` : ''
+    ].filter(Boolean).join('\n');
+    $('btnOrc').href = zap(`Olá, QdiQueijo! Gostaria de *solicitar um orçamento*:\n\n${base}\n\nPoderiam me passar condições de pagamento e prazo de entrega?`);
+    $('btnPed').href = zap(`Olá, QdiQueijo! Gostaria de *fazer um pedido*:\n\n${base}\n\nAguardo a confirmação do pedido. Obrigado!`);
+  }
+
+  function abrir(cod) {
+    atual = C.produtos.find(p => p.codigo === cod); if (!atual) return;
+    $('jQtd').value = 1;
+    preencher(atual);
+    $('janela').showModal();
+    $('janela').querySelector('.corpo').scrollTop = 0;
+  }
+
+  $('chips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; categoria = b.dataset.c; chips(); listar(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  $('busca').addEventListener('input', e => { termo = e.target.value; listar(); });
+  $('lista').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) abrir(c.dataset.cod); });
+  $('fechar').addEventListener('click', () => $('janela').close());
+  $('janela').addEventListener('click', e => { if (e.target === $('janela')) $('janela').close(); });
+  $('janela').addEventListener('close', () => { atual = null; });
+  const passo = d => { const step = atual && atual.unidade === 'KG' ? 0.5 : 1; $('jQtd').value = Math.max(step, Math.round((qtd() + d * step) * 10) / 10); links(); };
+  $('menos').addEventListener('click', () => passo(-1));
+  $('mais').addEventListener('click', () => passo(1));
+  $('jQtd').addEventListener('input', links);
+
+  chips(); listar();
+})();
+</script>
+</body>
+</html>

@@ -211,3 +211,13 @@ data/              banco SQLite (criado automaticamente)
 - Todos os dados são mantidos em memória e gravados no SQLite. Funciona bem até algumas dezenas de milhares de pedidos; acima disso, o ideal é migrar para PostgreSQL com consultas paginadas.
 - O navegador recebe a base inteira do perfil a cada atualização (atualiza sozinho a cada 30 s).
 - Ainda não tem: emissão de boletos, integração direta com a API dos bancos (Open Finance), busca automática das notas na SEFAZ (manifestação do destinatário), cancelamento de NF-e pelo sistema.
+
+## Catálogo interativo QdiQueijo (`/catalogo/`)
+
+Página pública (sem login) com os produtos do catálogo QdiQueijo: busca, filtro por categoria e, ao clicar no produto, uma janela com **valor**, **estoque**, **embalagem** e **informação nutricional**, mais dois botões que abrem o WhatsApp **(48) 98814-7567** com a mensagem pronta: **Solicitar orçamento** e **Fazer pedido** (produto, código, quantidade e total estimado).
+
+- Acesse em http://localhost:3000/catalogo/ (ou no domínio publicado).
+- **Produtos e preços**: `public/catalogo/produtos.js` (Tabela Venda de 26/10/2026). Para mudar preço, nome ou foto, edite esse arquivo; as fotos ficam em `public/catalogo/img/`.
+- **Estoque**: vem do DistribPro automaticamente quando o produto está cadastrado no sistema com o **mesmo código** do catálogo (rota pública `GET /api/catalogo/estoque`, que só devolve código e saldo). Sem isso, usa o campo `estoque` do `produtos.js`; `null` mostra "Consultar".
+- **Informação nutricional**: valores aproximados por 100 g (referência TACO/rótulos típicos). Confira e ajuste conforme o rótulo de cada fabricante.
+- **WhatsApp**: o número fica em `whatsapp` no início do `produtos.js`.

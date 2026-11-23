@@ -531,7 +531,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "157",
-   "nome": "Requeijão Culinário",
+   "nome": "Requeijão Culinário Bisnaga 1,010 kg",
    "marca": "Alcremo",
    "embalagem": "Bisnaga 1,010 kg",
    "categoria": "Laticínios & Cremosos",

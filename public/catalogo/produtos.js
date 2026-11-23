@@ -569,7 +569,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "75",
-   "nome": "Apresuntado Fatiado",
+   "nome": "Apresuntado Fatiado 10x10",
    "marca": "Rothenburg (RTB)",
    "embalagem": "Pacote 2 kg",
    "categoria": "Frios & Embutidos",

@@ -1101,7 +1101,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "35",
-   "nome": "Azeitona Verde com Caroço",
+   "nome": "Azeitona Verde com Caroço 2 kg",
    "marca": "Vale Fértil",
    "embalagem": "Balde 2 kg",
    "categoria": "Conservas",
@@ -1120,7 +1120,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "27",
-   "nome": "Cogumelo Fatiado em Conserva",
+   "nome": "Cogumelo Fatiado em Conserva Balde 2 kg",
    "marca": "Mediterrâneo",
    "embalagem": "Balde 2 kg",
    "categoria": "Conservas",

@@ -911,7 +911,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "46",
-   "nome": "Pepperoni Fatiado",
+   "nome": "Pepperoni Fatiado 500 g",
    "marca": "Bonatti",
    "embalagem": "500 g",
    "categoria": "Frios & Embutidos",

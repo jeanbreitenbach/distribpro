@@ -607,7 +607,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "319",
-   "nome": "Bacon Fatiado",
+   "nome": "Bacon Fatiado Pacote 750 g",
    "marca": "Sadia",
    "embalagem": "Pacote 750 g",
    "categoria": "Frios & Embutidos",

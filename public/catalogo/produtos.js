@@ -873,7 +873,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "73",
-   "nome": "Lombo Canadense Defumado Fatiado",
+   "nome": "Lombo Canadense Defumado Fatiado 1 kg",
    "marca": "Sulblime",
    "embalagem": "Pacote 1 kg",
    "categoria": "Frios & Embutidos",

@@ -1082,9 +1082,9 @@ window.CATALOGO = {
   },
   {
    "codigo": "24",
-   "nome": "Azeitona Verde Fatiada",
+   "nome": "Azeitona Verde Fatiada 1,800 kg",
    "marca": "Vale Fértil",
-   "embalagem": "Balde 1,8 kg",
+   "embalagem": "Balde 1,800 kg",
    "categoria": "Conservas",
    "preco": 55.39,
    "unidade": "UN",

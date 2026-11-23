@@ -359,63 +359,6 @@ window.CATALOGO = {
    }
   },
   {
-   "codigo": "16",
-   "nome": "Queijo Colonial Meia Lua",
-   "marca": "Serra da Abelha",
-   "embalagem": "500 g",
-   "categoria": "Queijos",
-   "preco": 48.47,
-   "unidade": "KG",
-   "estoque": null,
-   "imagem": null,
-   "nutricao": {
-    "kcal": 360,
-    "carboidratos": 1.5,
-    "proteinas": 24.0,
-    "gordurasTotais": 29.0,
-    "gordurasSaturadas": 18.0,
-    "sodio": 550
-   }
-  },
-  {
-   "codigo": "221",
-   "nome": "Queijo Mussarela Ralada",
-   "marca": "Wagner",
-   "embalagem": "Pacote 2 kg",
-   "categoria": "Queijos",
-   "preco": 39.3,
-   "unidade": "KG",
-   "estoque": null,
-   "imagem": null,
-   "nutricao": {
-    "kcal": 330,
-    "carboidratos": 3.0,
-    "proteinas": 22.6,
-    "gordurasTotais": 25.2,
-    "gordurasSaturadas": 15.0,
-    "sodio": 580
-   }
-  },
-  {
-   "codigo": "21",
-   "nome": "Queijo Provolone",
-   "marca": "Castello Branco",
-   "embalagem": "Peça",
-   "categoria": "Queijos",
-   "preco": 47.03,
-   "unidade": "KG",
-   "estoque": null,
-   "imagem": null,
-   "nutricao": {
-    "kcal": 352,
-    "carboidratos": 2.1,
-    "proteinas": 25.6,
-    "gordurasTotais": 26.6,
-    "gordurasSaturadas": 17.1,
-    "sodio": 876
-   }
-  },
-  {
    "codigo": "178",
    "nome": "Cheddar Cremoso",
    "marca": "Alcremo",

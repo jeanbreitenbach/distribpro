@@ -568,25 +568,6 @@ window.CATALOGO = {
    }
   },
   {
-   "codigo": "346",
-   "nome": "Nata",
-   "marca": "Becker",
-   "embalagem": "Balde 3,5 kg",
-   "categoria": "Laticínios & Cremosos",
-   "preco": 72.05,
-   "unidade": "UN",
-   "estoque": null,
-   "imagem": null,
-   "nutricao": {
-    "kcal": 340,
-    "carboidratos": 3.0,
-    "proteinas": 2.5,
-    "gordurasTotais": 35.0,
-    "gordurasSaturadas": 22.0,
-    "sodio": 40
-   }
-  },
-  {
    "codigo": "75",
    "nome": "Apresuntado Fatiado",
    "marca": "Rothenburg (RTB)",

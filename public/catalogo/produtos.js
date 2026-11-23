@@ -1234,7 +1234,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "262",
-   "nome": "Chocolate ao Leite Ralado",
+   "nome": "Chocolate ao Leite Ralado 5 kg",
    "marca": "Tradição",
    "embalagem": "5 kg",
    "categoria": "Doces, Recheios & Coberturas",

@@ -588,7 +588,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "146",
-   "nome": "Bacon Barriga Fatiado",
+   "nome": "Bacon Barriga Fatiado 2 kg",
    "marca": "Sulblime",
    "embalagem": "Pacote 2 kg",
    "categoria": "Frios & Embutidos",

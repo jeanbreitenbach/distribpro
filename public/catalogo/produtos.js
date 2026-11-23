@@ -968,9 +968,9 @@ window.CATALOGO = {
   },
   {
    "codigo": "318",
-   "nome": "Presunto Fatiado Retangular 10x15",
+   "nome": "Presunto Fatiado Retangular 10x15 Pacote 1 kg",
    "marca": "Bonatti",
-   "embalagem": "Peça 1 kg",
+   "embalagem": "Pacote 1 kg",
    "categoria": "Frios & Embutidos",
    "preco": 22.93,
    "unidade": "KG",

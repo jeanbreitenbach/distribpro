@@ -645,7 +645,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "3",
-   "nome": "Bacon Fatiado Lanche",
+   "nome": "Bacon Fatiado Lanche 1 kg",
    "marca": "Sulblime",
    "embalagem": "1 kg",
    "categoria": "Frios & Embutidos",

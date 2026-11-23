@@ -12,8 +12,7 @@ window.CATALOGO = {
   "Conservas",
   "Doces, Recheios & Coberturas",
   "Frutas Congeladas",
-  "Batata Palha",
-  "Temperos & Molhos"
+  "Batata Palha"
  ],
  "produtos": [
   {
@@ -1401,101 +1400,6 @@ window.CATALOGO = {
     "gordurasTotais": 35.0,
     "gordurasSaturadas": 12.0,
     "sodio": 450
-   }
-  },
-  {
-   "codigo": "330",
-   "nome": "Caldo de Galinha Sazon Profissional",
-   "marca": "Sazon",
-   "embalagem": "1,1 kg",
-   "categoria": "Temperos & Molhos",
-   "preco": 2.66,
-   "unidade": "UN",
-   "estoque": null,
-   "imagem": null,
-   "nutricao": {
-    "kcal": 230,
-    "carboidratos": 35.0,
-    "proteinas": 10.0,
-    "gordurasTotais": 5.0,
-    "gordurasSaturadas": 2.0,
-    "sodio": 20000
-   }
-  },
-  {
-   "codigo": "329",
-   "nome": "Caldo de Legumes Sazon Profissional",
-   "marca": "Sazon",
-   "embalagem": "Pacote",
-   "categoria": "Temperos & Molhos",
-   "preco": 18.25,
-   "unidade": "UN",
-   "estoque": null,
-   "imagem": null,
-   "nutricao": {
-    "kcal": 230,
-    "carboidratos": 35.0,
-    "proteinas": 10.0,
-    "gordurasTotais": 5.0,
-    "gordurasSaturadas": 2.0,
-    "sodio": 20000
-   }
-  },
-  {
-   "codigo": "328",
-   "nome": "Creme de Cebola",
-   "marca": "Ajinomoto",
-   "embalagem": "Pacote",
-   "categoria": "Temperos & Molhos",
-   "preco": 44.34,
-   "unidade": "UN",
-   "estoque": null,
-   "imagem": null,
-   "nutricao": {
-    "kcal": 360,
-    "carboidratos": 60.0,
-    "proteinas": 7.0,
-    "gordurasTotais": 10.0,
-    "gordurasSaturadas": 5.0,
-    "sodio": 7000
-   }
-  },
-  {
-   "codigo": "343",
-   "nome": "Molho de Tomate",
-   "marca": "Ajinomoto",
-   "embalagem": "2 kg",
-   "categoria": "Temperos & Molhos",
-   "preco": 5.62,
-   "unidade": "KG",
-   "estoque": null,
-   "imagem": null,
-   "nutricao": {
-    "kcal": 38,
-    "carboidratos": 7.0,
-    "proteinas": 1.4,
-    "gordurasTotais": 0.5,
-    "gordurasSaturadas": 0.1,
-    "sodio": 450
-   }
-  },
-  {
-   "codigo": "327",
-   "nome": "Sazon Profissional Vermelho",
-   "marca": "Sazon",
-   "embalagem": "Bag 900 g",
-   "categoria": "Temperos & Molhos",
-   "preco": 32.1,
-   "unidade": "UN",
-   "estoque": null,
-   "imagem": null,
-   "nutricao": {
-    "kcal": 150,
-    "carboidratos": 30.0,
-    "proteinas": 6.0,
-    "gordurasTotais": 1.0,
-    "gordurasSaturadas": 0.3,
-    "sodio": 21000
    }
   }
  ]

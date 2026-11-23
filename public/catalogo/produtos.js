@@ -113,9 +113,9 @@ window.CATALOGO = {
   },
   {
    "codigo": "15",
-   "nome": "Queijo Mussarela Fatiada P2",
+   "nome": "Queijo Mussarela Fatiada P2 Interfolhada",
    "marca": "Wagner",
-   "embalagem": "Peça fatiada",
+   "embalagem": "Peça fatiada interfolhada",
    "categoria": "Queijos",
    "preco": 37.99,
    "unidade": "KG",

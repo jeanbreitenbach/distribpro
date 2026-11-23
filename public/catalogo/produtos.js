@@ -37,9 +37,9 @@ window.CATALOGO = {
   },
   {
    "codigo": "11",
-   "nome": "Queijo Colonial Ralado",
+   "nome": "Queijo Colonial Ralado 2 kg",
    "marca": "Wagner",
-   "embalagem": "Pacote",
+   "embalagem": "Pacote 2 kg",
    "categoria": "Queijos",
    "preco": 40.61,
    "unidade": "KG",

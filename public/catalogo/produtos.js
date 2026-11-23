@@ -721,7 +721,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "286",
-   "nome": "Chuleta Suína Fatiada (Bisteca)",
+   "nome": "Chuleta Suína Fatiada (Bisteca) Congelada",
    "marca": "—",
    "embalagem": "Pacote",
    "categoria": "Frios & Embutidos",

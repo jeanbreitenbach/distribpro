@@ -341,7 +341,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "209",
-   "nome": "Ricota com Sal",
+   "nome": "Ricota com Sal 300 g",
    "marca": "Wagner",
    "embalagem": "300 g",
    "categoria": "Queijos",

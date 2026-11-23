@@ -1367,9 +1367,9 @@ window.CATALOGO = {
   },
   {
    "codigo": "322",
-   "nome": "Batata Palha Extra Fina",
+   "nome": "Batata Palha Extra Fina Pacote 1 kg",
    "marca": "Frishow",
-   "embalagem": "1 kg",
+   "embalagem": "Pacote 1 kg",
    "categoria": "Batata Palha",
    "preco": 24.24,
    "unidade": "UN",

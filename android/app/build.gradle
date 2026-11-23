@@ -1,0 +1,28 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'br.com.qdiqueijo.catalogo'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'br.com.qdiqueijo.catalogo'
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+    buildTypes {
+        release { minifyEnabled false }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    // O catálogo (HTML, produtos.js e fotos) vem direto de public/catalogo a cada build.
+    sourceSets { main { assets.srcDirs = ["$buildDir/generated/catalogo-assets"] } }
+}
+
+tasks.register('copiarCatalogo', Copy) {
+    from "$rootDir/../public/catalogo"
+    into "$buildDir/generated/catalogo-assets/catalogo"
+}
+preBuild.dependsOn 'copiarCatalogo'

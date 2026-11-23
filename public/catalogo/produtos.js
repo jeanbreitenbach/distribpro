@@ -854,7 +854,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "189",
-   "nome": "Linguiça Fina Defumada",
+   "nome": "Linguiça Fina Defumada Peça 2,5 kg",
    "marca": "Perdigão",
    "embalagem": "Peça 2,5 kg",
    "categoria": "Frios & Embutidos",

@@ -379,7 +379,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "235",
-   "nome": "Cheddar Culinário Bisnaga",
+   "nome": "Cheddar Culinário Bisnaga 1,010 kg",
    "marca": "Alcremo",
    "embalagem": "Bisnaga 1,010 kg",
    "categoria": "Laticínios & Cremosos",

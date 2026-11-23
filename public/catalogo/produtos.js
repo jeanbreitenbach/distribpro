@@ -550,9 +550,9 @@ window.CATALOGO = {
   },
   {
    "codigo": "336",
-   "nome": "Requeijão com Amido",
+   "nome": "Requeijão com Amido Bisnaga 1,800 kg",
    "marca": "Sullat",
-   "embalagem": "1,800 kg",
+   "embalagem": "Bisnaga 1,800 kg",
    "categoria": "Laticínios & Cremosos",
    "preco": 15.33,
    "unidade": "UN",

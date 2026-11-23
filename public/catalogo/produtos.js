@@ -1164,7 +1164,7 @@ window.CATALOGO = {
    "preco": 30.13,
    "unidade": "UN",
    "estoque": null,
-   "imagem": null,
+   "imagem": "img/p14_3.jpg",
    "nutricao": {
     "kcal": 29,
     "carboidratos": 4.3,
@@ -1305,25 +1305,6 @@ window.CATALOGO = {
     "gordurasTotais": 6.0,
     "gordurasSaturadas": 3.5,
     "sodio": 120
-   }
-  },
-  {
-   "codigo": "285",
-   "nome": "Avelã Forneável",
-   "marca": "Tradição",
-   "embalagem": "Bisnaga 1,010 kg",
-   "categoria": "Doces, Recheios & Coberturas",
-   "preco": 47.33,
-   "unidade": "UN",
-   "estoque": null,
-   "imagem": null,
-   "nutricao": {
-    "kcal": 530,
-    "carboidratos": 57.0,
-    "proteinas": 5.0,
-    "gordurasTotais": 31.0,
-    "gordurasSaturadas": 9.0,
-    "sodio": 40
    }
   },
   {

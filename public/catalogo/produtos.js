@@ -797,7 +797,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "61",
-   "nome": "Linguiça Calabresa Inteira Reta",
+   "nome": "Linguiça Calabresa Inteira Reta Peça 2 kg",
    "marca": "Stupp",
    "embalagem": "Peça 2 kg",
    "categoria": "Frios & Embutidos",

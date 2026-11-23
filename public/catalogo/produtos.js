@@ -398,9 +398,9 @@ window.CATALOGO = {
   },
   {
    "codigo": "335",
-   "nome": "Cheddar com Amido",
+   "nome": "Cheddar com Amido Bisnaga 1,200 kg",
    "marca": "Sullat",
-   "embalagem": "1,200 kg",
+   "embalagem": "Bisnaga 1,200 kg",
    "categoria": "Laticínios & Cremosos",
    "preco": 10.45,
    "unidade": "UN",

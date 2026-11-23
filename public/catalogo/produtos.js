@@ -132,9 +132,9 @@ window.CATALOGO = {
   },
   {
    "codigo": "17",
-   "nome": "Queijo Mussarela Fatiada P4",
+   "nome": "Queijo Mussarela Fatiada P4 Interfolhada",
    "marca": "Wagner",
-   "embalagem": "Peça fatiada",
+   "embalagem": "Peça fatiada interfolhada",
    "categoria": "Queijos",
    "preco": 37.99,
    "unidade": "KG",

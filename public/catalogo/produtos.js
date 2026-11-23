@@ -1042,25 +1042,6 @@ window.CATALOGO = {
    }
   },
   {
-   "codigo": "8",
-   "nome": "Leitão",
-   "marca": "—",
-   "embalagem": "Peça",
-   "categoria": "Frios & Embutidos",
-   "preco": 56.33,
-   "unidade": "KG",
-   "estoque": null,
-   "imagem": null,
-   "nutricao": {
-    "kcal": 230,
-    "carboidratos": 0.0,
-    "proteinas": 19.0,
-    "gordurasTotais": 17.0,
-    "gordurasSaturadas": 6.0,
-    "sodio": 60
-   }
-  },
-  {
    "codigo": "333",
    "nome": "Peito de Frango Cozido e Defumado",
    "marca": "Bonatti",

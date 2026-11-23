@@ -416,25 +416,6 @@ window.CATALOGO = {
    }
   },
   {
-   "codigo": "37",
-   "nome": "Queijo de Ovelha Maturado Zero Lactose",
-   "marca": "Manchego",
-   "embalagem": "Peça",
-   "categoria": "Queijos",
-   "preco": 229.25,
-   "unidade": "KG",
-   "estoque": null,
-   "imagem": null,
-   "nutricao": {
-    "kcal": 420,
-    "carboidratos": 0.5,
-    "proteinas": 26.0,
-    "gordurasTotais": 35.0,
-    "gordurasSaturadas": 23.0,
-    "sodio": 670
-   }
-  },
-  {
    "codigo": "178",
    "nome": "Cheddar Cremoso",
    "marca": "Alcremo",

@@ -417,7 +417,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "159",
-   "nome": "Cream Cheese Cremoso",
+   "nome": "Cream Cheese Cremoso Bisnaga 1,010 kg",
    "marca": "Alcremo",
    "embalagem": "Bisnaga 1,010 kg",
    "categoria": "Laticínios & Cremosos",

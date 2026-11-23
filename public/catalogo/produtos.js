@@ -493,9 +493,9 @@ window.CATALOGO = {
   },
   {
    "codigo": "231",
-   "nome": "Nata",
+   "nome": "Nata 3,5 kg",
    "marca": "Latelli",
-   "embalagem": "Balde",
+   "embalagem": "Balde 3,5 kg",
    "categoria": "Laticínios & Cremosos",
    "preco": 73.36,
    "unidade": "UN",

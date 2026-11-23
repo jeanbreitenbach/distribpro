@@ -816,7 +816,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "70",
-   "nome": "Linguiça Calabresa Inteira sem Pele",
+   "nome": "Linguiça Calabresa Inteira sem Pele 3 kg",
    "marca": "Sulblime",
    "embalagem": "3 kg",
    "categoria": "Frios & Embutidos",

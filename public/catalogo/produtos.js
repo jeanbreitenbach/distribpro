@@ -75,9 +75,9 @@ window.CATALOGO = {
   },
   {
    "codigo": "126",
-   "nome": "Queijo Gorgonzola Azul",
+   "nome": "Queijo Gorgonzola Azul 3 kg",
    "marca": "Latsul",
-   "embalagem": "Peça",
+   "embalagem": "Peça 3 kg",
    "categoria": "Queijos",
    "preco": 62.75,
    "unidade": "KG",

@@ -226,6 +226,8 @@ Página pública (sem login) com os produtos do catálogo QdiQueijo: busca, filt
 
 App que mostra o catálogo QdiQueijo embutido (funciona sem internet). Os botões de orçamento e pedido abrem o WhatsApp, e o botão voltar do celular fecha a janela do produto.
 
-- **Gerar o APK**: com o Android SDK instalado, rode `cd android && gradle assembleDebug`. O arquivo sai em `android/app/build/outputs/apk/debug/app-debug.apk`.
+- **Gerar o APK assinado (definitivo)**: com o Android SDK instalado, coloque o arquivo da chave (`qdiqueijo-catalogo.jks`) e o `keystore.properties` em `android/` (ajuste o caminho `storeFile` dentro dele) e rode `cd android && gradle assembleRelease`. O arquivo sai em `android/app/build/outputs/apk/release/app-release.apk`.
+- **A chave não fica no Git** (`*.jks` e `keystore.properties` estão no `.gitignore`). Guarde os dois arquivos em lugar seguro: sem eles não dá para lançar atualizações que instalem por cima do app já instalado.
+- **Só para teste**: `gradle assembleDebug` gera um APK assinado com chave de teste, que não serve para distribuir.
 - **Atualizar produtos e preços**: edite `public/catalogo/produtos.js` e gere o APK de novo. O build copia `public/catalogo` para dentro do app.
 - **Versão**: aumente `versionCode` e `versionName` em `android/app/build.gradle` a cada nova versão.

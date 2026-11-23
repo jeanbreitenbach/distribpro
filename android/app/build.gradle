@@ -1,5 +1,11 @@
 plugins { id 'com.android.application' }
 
+// Chave definitiva: os dados ficam em android/keystore.properties (fora do Git).
+// Caminho alternativo pela variável de ambiente KEYSTORE_PROPERTIES.
+def chaveProps = new Properties()
+def chaveArq = file(System.getenv('KEYSTORE_PROPERTIES') ?: "$rootDir/keystore.properties")
+if (chaveArq.exists()) chaveArq.withInputStream { chaveProps.load(it) }
+
 android {
     namespace 'br.com.qdiqueijo.catalogo'
     compileSdk 35
@@ -10,8 +16,21 @@ android {
         versionCode 1
         versionName '1.0'
     }
+    signingConfigs {
+        if (chaveProps['storeFile']) {
+            definitiva {
+                storeFile file(chaveProps['storeFile'])
+                storePassword chaveProps['storePassword']
+                keyAlias chaveProps['keyAlias']
+                keyPassword chaveProps['keyPassword']
+            }
+        }
+    }
     buildTypes {
-        release { minifyEnabled false }
+        release {
+            minifyEnabled false
+            if (chaveProps['storeFile']) signingConfig signingConfigs.definitiva
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

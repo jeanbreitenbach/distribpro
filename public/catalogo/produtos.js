@@ -1042,25 +1042,6 @@ window.CATALOGO = {
    }
   },
   {
-   "codigo": "333",
-   "nome": "Peito de Frango Cozido e Defumado",
-   "marca": "Bonatti",
-   "embalagem": "Peça 2 kg",
-   "categoria": "Frios & Embutidos",
-   "preco": 25.41,
-   "unidade": "UN",
-   "estoque": null,
-   "imagem": null,
-   "nutricao": {
-    "kcal": 110,
-    "carboidratos": 2.0,
-    "proteinas": 19.0,
-    "gordurasTotais": 3.0,
-    "gordurasSaturadas": 1.0,
-    "sodio": 950
-   }
-  },
-  {
    "codigo": "24",
    "nome": "Azeitona Verde Fatiada 1,800 kg",
    "marca": "Vale Fértil",
@@ -1252,7 +1233,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "52",
-   "nome": "Doce de Leite",
+   "nome": "Doce de Leite 4,5 kg",
    "marca": "Terra Viva",
    "embalagem": "Balde 4,5 kg",
    "categoria": "Doces, Recheios & Coberturas",

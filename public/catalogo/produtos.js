@@ -1215,7 +1215,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "270",
-   "nome": "Chocolate ao Leite Forneável",
+   "nome": "Chocolate ao Leite Forneável Bisnaga 1,010 kg",
    "marca": "Conceito",
    "embalagem": "Bisnaga 1,010 kg",
    "categoria": "Doces, Recheios & Coberturas",

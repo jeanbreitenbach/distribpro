@@ -303,7 +303,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "114",
-   "nome": "Queijo Provolone Sabor Defumado",
+   "nome": "Queijo Provolone Sabor Defumado 4 kg",
    "marca": "Da Rolt",
    "embalagem": "Peça 4 kg",
    "categoria": "Queijos",

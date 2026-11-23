@@ -512,7 +512,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "158",
-   "nome": "Requeijão Cremoso",
+   "nome": "Requeijão Cremoso Bisnaga 1,010 kg",
    "marca": "Alcremo",
    "embalagem": "Bisnaga 1,010 kg",
    "categoria": "Laticínios & Cremosos",

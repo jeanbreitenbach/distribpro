@@ -949,7 +949,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "297",
-   "nome": "Presunto Fatiado 10x10",
+   "nome": "Presunto Fatiado 10x10 Peça 2 kg",
    "marca": "Bonatti",
    "embalagem": "Peça 2 kg",
    "categoria": "Frios & Embutidos",

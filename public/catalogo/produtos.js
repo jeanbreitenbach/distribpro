@@ -1385,7 +1385,7 @@ window.CATALOGO = {
    }
   },
   {
-   "codigo": "",
+   "codigo": "18",
    "nome": "Batata Palha Tradicional Pacote 1 kg",
    "marca": "Frishow",
    "embalagem": "Pacote 1 kg",

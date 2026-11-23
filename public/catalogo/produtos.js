@@ -208,9 +208,9 @@ window.CATALOGO = {
   },
   {
    "codigo": "76",
-   "nome": "Queijo Parmesão",
+   "nome": "Queijo Parmesão 5 kg",
    "marca": "Minas",
-   "embalagem": "Peça",
+   "embalagem": "Peça 5 kg",
    "categoria": "Queijos",
    "preco": 57.64,
    "unidade": "KG",

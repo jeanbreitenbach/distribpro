@@ -683,7 +683,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "50",
-   "nome": "Bacon em Cubos",
+   "nome": "Bacon em Cubos 2 kg",
    "marca": "Stupp",
    "embalagem": "Peça 2 kg",
    "categoria": "Frios & Embutidos",

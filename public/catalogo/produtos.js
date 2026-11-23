@@ -1005,8 +1005,8 @@ window.CATALOGO = {
    }
   },
   {
-   "codigo": "139",
-   "nome": "Salame Inteiro Tipo Italiano 40",
+   "codigo": "40",
+   "nome": "Salame",
    "marca": "Rothenburg (RTB)",
    "embalagem": "Peça",
    "categoria": "Frios & Embutidos",

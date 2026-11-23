@@ -1139,7 +1139,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "26",
-   "nome": "Tomate Seco em Conserva",
+   "nome": "Tomate Seco em Conserva 1,4 kg",
    "marca": "Mediterrâneo",
    "embalagem": "Balde 1,4 kg",
    "categoria": "Conservas",

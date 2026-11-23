@@ -18,9 +18,9 @@ window.CATALOGO = {
  "produtos": [
   {
    "codigo": "236",
-   "nome": "Queijo Colonial Ralado",
+   "nome": "Queijo Colonial Ralado 2 kg",
    "marca": "Emybel",
-   "embalagem": "Pacote",
+   "embalagem": "Pacote 2 kg",
    "categoria": "Queijos",
    "preco": 40.61,
    "unidade": "KG",

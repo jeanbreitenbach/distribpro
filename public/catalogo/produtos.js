@@ -322,7 +322,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "64",
-   "nome": "Queijo Ralado",
+   "nome": "Queijo Ralado 500 g",
    "marca": "Minas",
    "embalagem": "Pacote 500 g",
    "categoria": "Queijos",

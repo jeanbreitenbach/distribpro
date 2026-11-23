@@ -436,7 +436,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "309",
-   "nome": "Creme Culinário",
+   "nome": "Creme Culinário 1 L",
    "marca": "Super Mix",
    "embalagem": "1 L",
    "categoria": "Laticínios & Cremosos",

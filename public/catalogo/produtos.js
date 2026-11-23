@@ -474,9 +474,9 @@ window.CATALOGO = {
   },
   {
    "codigo": "68",
-   "nome": "Manteiga em Bloco sem Sal",
+   "nome": "Manteiga em Bloco sem Sal 3 kg",
    "marca": "Emybel",
-   "embalagem": "Bloco",
+   "embalagem": "Bloco 3 kg",
    "categoria": "Laticínios & Cremosos",
    "preco": 31.9,
    "unidade": "KG",

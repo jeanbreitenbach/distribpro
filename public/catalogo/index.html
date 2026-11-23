@@ -261,7 +261,7 @@ footer a{color:inherit}
     $('lista').innerHTML = cats.map(c => `<section class="secao"><h2>${esc(c)}</h2><div class="grade">${
       filtro.filter(p => p.categoria === c).map(p => `
         <button class="card" data-i="${C.produtos.indexOf(p)}" aria-label="${esc(p.nome)} ${esc(p.marca)}">
-          <div class="foto">${foto(p)}<span class="selo">Cód. ${esc(p.codigo)}</span></div>
+          <div class="foto">${foto(p)}${p.codigo ? `<span class="selo">Cód. ${esc(p.codigo)}</span>` : ''}</div>
           <div class="info"><div class="nome">${esc(p.nome)}</div><div class="marca">${p.marca === '—' ? '' : esc(p.marca)}</div><div class="ver">Ver preço e detalhes ›</div></div>
         </button>`).join('')}</div></section>`).join('');
   }
@@ -269,7 +269,7 @@ footer a{color:inherit}
   const VD = { kcal: 2000, carboidratos: 300, proteinas: 50, gordurasTotais: 65, gordurasSaturadas: 20, sodio: 2000 };
   function preencher(p) {
     $('jFoto').innerHTML = foto(p, true);
-    $('jCod').textContent = `Código ${p.codigo} · ${p.categoria}`;
+    $('jCod').textContent = (p.codigo ? `Código ${p.codigo} · ` : '') + p.categoria;
     $('jNome').textContent = p.nome;
     $('jMarca').textContent = p.marca === '—' ? '' : `Marca: ${p.marca}`;
     $('jPreco').innerHTML = precoTxt(p);
@@ -297,7 +297,7 @@ footer a{color:inherit}
     const q = qtd(), qs = `${num(q, Number.isInteger(q) ? 0 : 1)} ${p.unidade}`;
     const base = [
       `*Produto:* ${p.nome}${p.marca !== '—' ? ' – ' + p.marca : ''}`,
-      `*Código:* ${p.codigo}`,
+      p.codigo ? `*Código:* ${p.codigo}` : '',
       `*Embalagem:* ${p.embalagem}`,
       `*Quantidade:* ${qs}`,
       p.preco != null ? `*Valor de tabela:* ${brl(p.preco)}/${p.unidade}` : '*Valor:* sob consulta',

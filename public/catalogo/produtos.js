@@ -1025,7 +1025,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "96",
-   "nome": "Salame Italiano Fatiado",
+   "nome": "Salame Italiano Fatiado 1 kg",
    "marca": "Rothenburg (RTB)",
    "embalagem": "Peça 1 kg",
    "categoria": "Frios & Embutidos",

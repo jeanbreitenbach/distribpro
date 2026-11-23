@@ -260,7 +260,7 @@ footer a{color:inherit}
     const cats = C.categorias.filter(c => filtro.some(p => p.categoria === c));
     $('lista').innerHTML = cats.map(c => `<section class="secao"><h2>${esc(c)}</h2><div class="grade">${
       filtro.filter(p => p.categoria === c).map(p => `
-        <button class="card" data-cod="${esc(p.codigo)}" aria-label="${esc(p.nome)} ${esc(p.marca)}">
+        <button class="card" data-i="${C.produtos.indexOf(p)}" aria-label="${esc(p.nome)} ${esc(p.marca)}">
           <div class="foto">${foto(p)}<span class="selo">Cód. ${esc(p.codigo)}</span></div>
           <div class="info"><div class="nome">${esc(p.nome)}</div><div class="marca">${esc(p.marca)}</div><div class="ver">Ver preço e detalhes ›</div></div>
         </button>`).join('')}</div></section>`).join('');
@@ -307,8 +307,8 @@ footer a{color:inherit}
     $('btnPed').href = zap(`Olá, QdiQueijo! Gostaria de *fazer um pedido*:\n\n${base}\n\nAguardo a confirmação do pedido. Obrigado!`);
   }
 
-  function abrir(cod) {
-    atual = C.produtos.find(p => p.codigo === cod); if (!atual) return;
+  function abrir(i) {
+    atual = C.produtos[i]; if (!atual) return;
     $('jQtd').value = 1;
     preencher(atual);
     $('janela').showModal();
@@ -317,7 +317,7 @@ footer a{color:inherit}
 
   $('chips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; categoria = b.dataset.c; chips(); listar(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
   $('busca').addEventListener('input', e => { termo = e.target.value; listar(); });
-  $('lista').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) abrir(c.dataset.cod); });
+  $('lista').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) abrir(+c.dataset.i); });
   $('fechar').addEventListener('click', () => $('janela').close());
   $('janela').addEventListener('click', e => { if (e.target === $('janela')) $('janela').close(); });
   $('janela').addEventListener('close', () => { atual = null; });

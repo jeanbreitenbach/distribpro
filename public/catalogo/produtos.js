@@ -1177,7 +1177,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "271",
-   "nome": "Chocolate Branco Forneável",
+   "nome": "Chocolate Branco Forneável Bisnaga 1,010 kg",
    "marca": "Conceito",
    "embalagem": "Bisnaga 1,010 kg",
    "categoria": "Doces, Recheios & Coberturas",

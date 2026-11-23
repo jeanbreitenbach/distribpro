@@ -626,7 +626,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "32",
-   "nome": "Bacon Fatiado",
+   "nome": "Bacon Fatiado 2 kg",
    "marca": "Stupp",
    "embalagem": "Peça 2 kg",
    "categoria": "Frios & Embutidos",

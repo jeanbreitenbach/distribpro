@@ -1157,10 +1157,10 @@ window.CATALOGO = {
    }
   },
   {
-   "codigo": "29",
-   "nome": "Palmito de Pupunha Picado em Conserva",
+   "codigo": "27",
+   "nome": "Palmito de Pupunha Picado em Conserva 1,800 kg",
    "marca": "—",
-   "embalagem": "1,8 kg",
+   "embalagem": "1,800 kg",
    "categoria": "Conservas",
    "preco": 30.13,
    "unidade": "UN",

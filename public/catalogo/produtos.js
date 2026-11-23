@@ -835,9 +835,9 @@ window.CATALOGO = {
   },
   {
    "codigo": "255",
-   "nome": "Linguiça Calabresa Moída",
+   "nome": "Linguiça Calabresa Moída 2 kg",
    "marca": "—",
-   "embalagem": "Pacote 1 kg",
+   "embalagem": "Pacote 2 kg",
    "categoria": "Frios & Embutidos",
    "preco": 22.4,
    "unidade": "KG",

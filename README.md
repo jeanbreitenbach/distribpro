@@ -220,4 +220,4 @@ Página pública (sem login) com os produtos do catálogo QdiQueijo: busca, filt
 - **Produtos e preços**: `public/catalogo/produtos.js` (Tabela Venda de 26/10/2026). Para mudar preço, nome ou foto, edite esse arquivo; as fotos ficam em `public/catalogo/img/`.
 - **Estoque**: vem do DistribPro automaticamente quando o produto está cadastrado no sistema com o **mesmo código** do catálogo (rota pública `GET /api/catalogo/estoque`, que só devolve código e saldo). Sem isso, usa o campo `estoque` do `produtos.js`; `null` mostra "Consultar".
 - **Informação nutricional**: valores aproximados por 100 g (referência TACO/rótulos típicos). Confira e ajuste conforme o rótulo de cada fabricante.
-- **WhatsApp**: o número dos botões fica em `whatsapp` no início do `produtos.js`. O rodapé mostra o número do catálogo impresso, (48) 9203-7018, definido no `index.html`.
+- **WhatsApp**: o número (botões e rodapé) fica em `whatsapp` no início do `produtos.js`.

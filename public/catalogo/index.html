@@ -167,7 +167,7 @@ footer a{color:inherit}
 
 <footer>
   Preços da tabela de venda sujeitos a alteração sem aviso prévio. Produtos em KG têm o valor final calculado pelo peso.<br>
-  Pedidos e orçamentos pelo WhatsApp <a id="zapRodape" target="_blank" rel="noopener">(48) 9203-7018</a>
+  Pedidos e orçamentos pelo WhatsApp <a id="zapRodape" target="_blank" rel="noopener">(48) 98814-7567</a>
 </footer>
 
 <dialog id="janela" aria-labelledby="jNome">
@@ -226,7 +226,7 @@ footer a{color:inherit}
   const sem = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const zap = txt => `https://wa.me/${C.whatsapp}?text=${encodeURIComponent(txt)}`;
-  $('zapRodape').href = 'https://wa.me/554892037018?text=' + encodeURIComponent('Olá! Vim pelo catálogo da QdiQueijo e gostaria de mais informações.');
+  $('zapRodape').href = zap('Olá! Vim pelo catálogo da QdiQueijo e gostaria de mais informações.');
 
   let categoria = 'Todas', termo = '', atual = null;
 

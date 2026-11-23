@@ -221,3 +221,11 @@ Página pública (sem login) com os produtos do catálogo QdiQueijo: busca, filt
 - **Estoque**: vem do DistribPro automaticamente quando o produto está cadastrado no sistema com o **mesmo código** do catálogo (rota pública `GET /api/catalogo/estoque`, que só devolve código e saldo). Sem isso, usa o campo `estoque` do `produtos.js`; `null` mostra "Consultar".
 - **Informação nutricional**: valores aproximados por 100 g (referência TACO/rótulos típicos). Confira e ajuste conforme o rótulo de cada fabricante.
 - **WhatsApp**: o número (botões e rodapé) fica em `whatsapp` no início do `produtos.js`.
+
+## App Android do catálogo (`android/`)
+
+App que mostra o catálogo QdiQueijo embutido (funciona sem internet). Os botões de orçamento e pedido abrem o WhatsApp, e o botão voltar do celular fecha a janela do produto.
+
+- **Gerar o APK**: com o Android SDK instalado, rode `cd android && gradle assembleDebug`. O arquivo sai em `android/app/build/outputs/apk/debug/app-debug.apk`.
+- **Atualizar produtos e preços**: edite `public/catalogo/produtos.js` e gere o APK de novo. O build copia `public/catalogo` para dentro do app.
+- **Versão**: aumente `versionCode` e `versionName` em `android/app/build.gradle` a cada nova versão.

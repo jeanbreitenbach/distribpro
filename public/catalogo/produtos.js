@@ -777,8 +777,8 @@ window.CATALOGO = {
    }
   },
   {
-   "codigo": "337",
-   "nome": "Linguiça Calabresa Fatiada Lanche",
+   "codigo": "236",
+   "nome": "Linguiça Calabresa Fatiada Lanche 1 kg",
    "marca": "Sulblime",
    "embalagem": "Pacote 1 kg",
    "categoria": "Frios & Embutidos",

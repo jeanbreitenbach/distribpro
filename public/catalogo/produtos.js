@@ -568,25 +568,6 @@ window.CATALOGO = {
    }
   },
   {
-   "codigo": "214",
-   "nome": "Manteiga em Bloco sem Sal",
-   "marca": "Wagner",
-   "embalagem": "Bloco",
-   "categoria": "Laticínios & Cremosos",
-   "preco": 28.82,
-   "unidade": "KG",
-   "estoque": null,
-   "imagem": null,
-   "nutricao": {
-    "kcal": 758,
-    "carboidratos": 0.0,
-    "proteinas": 0.4,
-    "gordurasTotais": 86.0,
-    "gordurasSaturadas": 48.0,
-    "sodio": 4
-   }
-  },
-  {
    "codigo": "346",
    "nome": "Nata",
    "marca": "Becker",

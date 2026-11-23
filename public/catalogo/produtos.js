@@ -1196,7 +1196,7 @@ window.CATALOGO = {
   },
   {
    "codigo": "293",
-   "nome": "Chocolate Branco Ralado",
+   "nome": "Chocolate Branco Ralado 5 kg",
    "marca": "Tradição",
    "embalagem": "5 kg",
    "categoria": "Doces, Recheios & Coberturas",

@@ -13,7 +13,7 @@ const chamadas = { produtos: 0, tokensErrados: 0, limitado: false };
 const PRODUTOS = [
   { id: 1, codigo: 'IP-TRAD-2KG', nome: 'PAO DE QUEIJO TRAD 2KG', preco_tabela: 50, saldo_estoque: 5, unidade: 'PCT', ativo: true, excluido: false, ultima_alteracao: '2026-01-01 10:00:00' },
   { id: 2, codigo: 'X99', nome: 'PAO QUEIJO TINO 800G', preco_tabela: 15.5, saldo_estoque: 300, unidade: 'PCT', ativo: true, excluido: false, ultima_alteracao: '2026-01-02 10:00:00' },
-  { id: 3, codigo: 'TINO-TRAD-400', nome: 'PAO QUEIJO TINO 400G', preco_tabela: 8, saldo_estoque: null, unidade: 'PCT', ativo: true, excluido: false, ultima_alteracao: '2026-01-03 10:00:00' },
+  { id: 3, codigo: '7', nome: 'PAO QUEIJO TINO 400G', preco_tabela: 8, saldo_estoque: null, unidade: 'PCT', ativo: true, excluido: false, ultima_alteracao: '2026-01-03 10:00:00' },
   { id: 4, codigo: 'IP-COQ-800', nome: 'COQUETEL (excluído)', preco_tabela: 20, saldo_estoque: 10, unidade: 'PCT', ativo: true, excluido: true, ultima_alteracao: '2026-01-04 10:00:00' },
   { id: 5, codigo: 'IP-LANCHE-1KG', nome: 'LANCHE (inativo)', preco_tabela: 20, saldo_estoque: 10, unidade: 'PCT', ativo: false, excluido: false, ultima_alteracao: '2026-01-05 10:00:00' }];
 const TAB = [{ id: 9, tabela_id: 7, produto_id: 1, preco: 45, excluido: false, ultima_alteracao: '2026-01-01 11:00:00' },

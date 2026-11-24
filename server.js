@@ -303,7 +303,7 @@ function vinculosMercos() {
   const manual = db.empresa.mercosVinculos || {}, out = {};
   for (const c of CATALOGO.PRODUTOS) {
     if (manual[c.codigo] === '-') continue; // marcado como "sem vínculo"
-    const p = manual[c.codigo] ? porId.get(String(manual[c.codigo])) : porCod.get(c.codigo);
+    const p = manual[c.codigo] ? porId.get(String(manual[c.codigo])) : porCod.get(c.codigo) || (c.mercos && porCod.get(c.mercos));
     if (p) out[c.codigo] = { ...p, manual: !!manual[c.codigo] };
   }
   return out;

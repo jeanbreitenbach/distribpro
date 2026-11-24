@@ -23,9 +23,13 @@
   const linkW = (attrs, txt) => `<a class="btn whats" ${attrs} href="${linkWhats(saudacao())}" target="_blank" rel="noopener">${txt}</a>`;
   const imagem = u => (window.CATALOGO_BASE !== undefined ? window.CATALOGO_BASE + u.replace(/^\//, '') : u); // página publicada fora do servidor
   const saudacao = () => `Olá, ${CONFIG.atendente}!`;
+  /** Peso do pacote em kg, lido da embalagem ("2 kg", "400 g"). */
+  const kgPacote = p => { const m = String(p.embalagem).replace(',', '.').match(/([\d.]+)\s*(kg|g)/i); return m ? Number(m[1]) / (m[2].toLowerCase() === 'g' ? 1000 : 1) : 1; };
+  /** Preço de um pacote: quando a tabela é por quilo (unidade KG), multiplica pelo peso do pacote. */
+  const precoPacote = (p, pr = precos[p.codigo]) => (pr && pr.preco ? Math.round(pr.preco * (String(pr.unidade).toUpperCase() === 'KG' ? kgPacote(p) : 1) * 100) / 100 : 0);
   function linhaItem(p, qtd, comPreco) {
     const pr = precos[p.codigo]; let s = `• ${qtd}x ${p.nomeCompleto} [${p.codigo}]`;
-    if (comPreco && pr && pr.preco) s += ` — ${brl(pr.preco)} = ${brl(pr.preco * qtd)}`;
+    if (comPreco && pr && pr.preco) s += ` — ${brl(precoPacote(p))} o pacote = ${brl(precoPacote(p) * qtd)}`;
     return s;
   }
   function dadosCliente() {
@@ -47,7 +51,12 @@
 
   /* ---------- preço e estoque ---------- */
   async function carregarPrecos() {
-    if (window.CATALOGO_SEM_API) { $('#status').textContent = `Preços e estoque sob consulta com o ${CONFIG.atendente} pelo WhatsApp.`; return; }
+    if (window.CATALOGO_SEM_API) { // página publicada fora do servidor: usa a tabela de preços gravada nela, se houver
+      const f = window.CATALOGO_PRECOS_FIXOS;
+      if (f && f.itens) { precos = f.itens; desenhar(); }
+      $('#status').textContent = f && f.itens ? `Preços da tabela de ${f.data}. Estoque e prazo de entrega: consulte o ${CONFIG.atendente} pelo WhatsApp.` : `Preços e estoque sob consulta com o ${CONFIG.atendente} pelo WhatsApp.`;
+      return;
+    }
     try {
       const r = await fetch('/api/catalogo', { cache: 'no-store' }); if (!r.ok) throw new Error();
       const j = await r.json(); precos = Object.fromEntries(j.itens.map(i => [i.codigo, i]));
@@ -65,7 +74,9 @@
   }
   function blocoPreco(p) {
     const pr = precos[p.codigo];
-    return pr && pr.preco ? `<span class="preco">${brl(pr.preco)} <small>/${esc(pr.unidade.toLowerCase())}</small></span>` : `<span class="consulta">Preço sob consulta</span>`;
+    if (!pr || !pr.preco) return `<span class="consulta">Preço sob consulta</span>`;
+    if (String(pr.unidade).toUpperCase() === 'KG') return `<span class="preco">${brl(precoPacote(p))} <small>o pacote de ${esc(p.embalagem)}</small></span><span class="por-kg">${brl(pr.preco)} o kg</span>`;
+    return `<span class="preco">${brl(pr.preco)} <small>/${esc(pr.unidade.toLowerCase())}</small></span>`;
   }
 
   /* ---------- lista ---------- */
@@ -161,7 +172,7 @@
   const itensCarrinho = () => Object.entries(carrinho).filter(([c, q]) => porCodigo[c] && q > 0).map(([c, q]) => [porCodigo[c], q]);
   function totalCarrinho(itens = itensCarrinho()) {
     let valor = 0, semPreco = 0;
-    for (const [p, q] of itens) { const pr = precos[p.codigo]; if (pr && pr.preco) valor += pr.preco * q; else semPreco++; }
+    for (const [p, q] of itens) { const pr = precos[p.codigo]; if (pr && pr.preco) valor += precoPacote(p) * q; else semPreco++; }
     return { valor, semPreco };
   }
   function salvarCarrinho() {
@@ -181,7 +192,7 @@
           const pr = precos[p.codigo]; const falta = pr && pr.estoque !== undefined && q > pr.estoque;
           return `<div class="c-item"><img src="${imagem(p.imagem)}" alt="">
             <div><div class="nome">${esc(p.nome)}${p.detalhe ? ' — ' + esc(p.detalhe) : ''}</div>
-              <div class="sub">${esc(p.embalagem)} · un. ${esc(p.unidadePeso)} · ${pr && pr.preco ? brl(pr.preco) : 'preço sob consulta'}</div>
+              <div class="sub">${esc(p.embalagem)} · un. ${esc(p.unidadePeso)} · ${pr && pr.preco ? brl(precoPacote(p)) + ' o pacote' : 'preço sob consulta'}</div>
               ${falta ? `<div class="alerta-est">Estoque atual: ${num(pr.estoque)}. O atendente confirma o restante.</div>` : ''}</div>
             <div class="c-dir">${seletor(p.codigo, q, 'carrinho')}<button type="button" class="remover" data-remover="${p.codigo}">Remover</button></div></div>`;
         }).join('') : '<p class="vazio">Seu carrinho está vazio.<br>Toque em <b>Adicionar</b> nos produtos.</p>'}

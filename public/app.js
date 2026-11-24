@@ -450,7 +450,7 @@ async function telaMercos() {
   openModal(`<h2>Integração com o Mercos</h2>
     <p>${m.erro ? `<span class="badge b-bad">Erro</span> ${esc(m.erro)}` : `<span class="badge b-ok">Conectado</span> ${m.produtos} produtos lidos`}
       ${m.ultimaSync ? ` · última leitura ${new Date(m.ultimaSync).toLocaleString('pt-BR')}` : ''}${m.tabela ? ` · tabela de preço ${m.tabela}` : ' · preço de tabela do produto'}</p>
-    <p class="hint">${vinc} de ${r.catalogo.length} itens do catálogo ligados a um produto do Mercos. O vínculo automático usa o mesmo código; escolha o produto nos que não forem encontrados.</p>
+    <p class="hint">${vinc} de ${r.catalogo.length} itens do catálogo ligados a um produto do Mercos. O vínculo automático usa o código do Mercos anotado no catálogo ou o mesmo código; escolha o produto nos que não forem encontrados.</p>
     <form id="frmMercos" onsubmit="event.preventDefault()"><div class="tbl-wrap"><table><thead><tr><th>Item do catálogo</th><th>Produto no Mercos</th></tr></thead><tbody>${linhas}</tbody></table></div></form>
     <div class="actions"><button class="btn" onclick="sincronizarMercos()">↻ Ler o Mercos agora</button><span style="flex:1"></span><button class="btn" onclick="closeModal()">Cancelar</button>
     <button class="btn pri" onclick="salvarVinculosMercos()">Salvar vínculos</button></div>`, true);

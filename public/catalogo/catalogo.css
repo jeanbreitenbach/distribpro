@@ -62,6 +62,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .peso{border:2px solid var(--ouro);border-radius:999px;padding:0 9px;font-weight:700;font-style:italic;color:var(--texto)}
 .preco-linha{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
 .preco{white-space:nowrap;font-size:19px;font-weight:800;color:var(--texto)}
+.por-kg{font-size:12px;color:var(--suave);margin-top:-2px}
 .preco small{font-size:12px;font-weight:500;color:var(--suave)}
 .consulta{font-size:13px;color:var(--suave);font-weight:600}
 .est{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}

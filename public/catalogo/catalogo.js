@@ -104,15 +104,17 @@
   const qtdDe = el => Math.max(1, Math.floor(Number(el.querySelector('input').value) || 1));
 
   /* ---------- janela do produto ---------- */
-  const VD = { kcal: 2000, carb: 300, acucares: 50, prot: 50, gord: 65, sat: 20, fibra: 25, sodio: 2000 }; // valores diários de referência (RDC 429/2020)
+  const VD = { kcal: 2000, carb: 300, acucaresAdic: 50, prot: 50, gord: 65, sat: 20, fibra: 25, sodio: 2000 }; // valores diários de referência (RDC 429/2020)
   function tabelaNutricional(n) {
-    const linhas = [['Valor energético', 'kcal', 'kcal'], ['Carboidratos', 'carb', 'g'], ['Açúcares totais', 'acucares', 'g', 1], ['Proteínas', 'prot', 'g'],
-      ['Gorduras totais', 'gord', 'g'], ['Gorduras saturadas', 'sat', 'g', 1], ['Gorduras trans', 'trans', 'g', 1], ['Fibra alimentar', 'fibra', 'g'], ['Sódio', 'sodio', 'mg']];
+    const linhas = [['Valor energético', 'kcal', 'kcal'], ['Carboidratos', 'carb', 'g'], ['Açúcares totais', 'acucares', 'g', 1], ['Açúcares adicionados', 'acucaresAdic', 'g', 1], ['Proteínas', 'prot', 'g'],
+      ['Gorduras totais', 'gord', 'g'], ['Gorduras saturadas', 'sat', 'g', 1], ['Gorduras trans', 'trans', 'g', 1], ['Fibra alimentar', 'fibra', 'g'], ['Sódio', 'sodio', 'mg']].filter(([, k]) => n[k] !== undefined);
+    const vd = k => { const v = n.vd && n.vd[k] !== undefined ? n.vd[k] : VD[k] && k !== 'trans' ? Math.round(n[k] / VD[k] * 100) : null; return v === null ? '—' : v + '%'; };
     return `<table class="nutri"><caption>Informação nutricional</caption>
       <thead><tr><th>Porção de ${esc(n.porcao)}</th><th>Porção</th><th>%VD*</th></tr></thead>
-      <tbody>${linhas.map(([nome, k, un, sub]) => `<tr${sub ? ' class="sub"' : ''}><th scope="row">${nome}</th><td>${num(n[k])} ${un}</td><td>${VD[k] ? Math.round(n[k] / VD[k] * 100) + '%' : '—'}</td></tr>`).join('')}</tbody></table>
-      <p class="nota">*Percentual de valores diários fornecidos pela porção.</p>
-      ${n.confirmada ? '' : '<p class="ref">Valores de referência para este tipo de produto. Confira a tabela na embalagem.</p>'}`;
+      <tbody>${linhas.map(([nome, k, un, sub]) => `<tr${sub ? ' class="sub"' : ''}><th scope="row">${nome}</th><td>${num(n[k])} ${un}</td><td>${vd(k)}</td></tr>`).join('')}</tbody></table>
+      <p class="nota">*Percentual de valores diários fornecidos pela porção.${n.obs ? ' ' + esc(n.obs) : ''}</p>
+      ${n.confirmada ? (n.fonte ? `<p class="nota">Fonte: <a href="${esc(n.fonte)}" target="_blank" rel="noopener">site do fabricante</a>. Confira sempre o rótulo do produto.</p>` : '')
+        : '<p class="ref">Valores de referência para este tipo de produto. Confira a tabela na embalagem.</p>'}`;
   }
   function desenharProduto(codigo, manterQtd) {
     const p = porCodigo[codigo]; if (!p) return;
@@ -136,7 +138,9 @@
             ${pr && pr.preco ? '' : `<button type="button" class="btn sec" data-whats="consulta" style="grid-column:1/-1">Consultar preço e estoque com o ${esc(CONFIG.atendente)}</button>`}
           </div>
           ${tabelaNutricional(p.nutricao)}
-          <h3 class="tit">Modo de preparo</h3><p class="texto-p">${esc(p.preparo)}</p>
+          ${p.alergicos ? `<p class="alerg"><b>Alérgicos:</b> ${esc(p.alergicos)}</p>` : ''}
+          ${p.ingredientes ? `<h3 class="tit">Ingredientes</h3><p class="texto-p">${esc(p.ingredientes)}</p>` : ''}
+          <h3 class="tit">Modo de preparo</h3><ol class="passos">${p.preparo.map(x => `<li>${esc(x)}</li>`).join('')}</ol>
           <h3 class="tit">Conservação</h3><p class="texto-p">${esc(p.conservacao)}</p>
         </div>
       </div>`;

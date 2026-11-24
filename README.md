@@ -45,7 +45,7 @@ Endereço: **`/catalogo`** (ex.: `https://seu-sistema.onrender.com/catalogo`). N
 - O catálogo nunca mostra custo nem margem. `CATALOGO_PRECOS=nao` esconde os preços; `CATALOGO_ESTOQUE=situacao` mostra só *Disponível / Últimas unidades / Esgotado*; `CATALOGO_ESTOQUE=nao` esconde o estoque.
 - **Editar o catálogo** (número do WhatsApp, nome do atendente, produtos, tabelas nutricionais): arquivo `lib/catalogo.js`. Fotos em `public/catalogo/img/`.
 
-⚠️ As **tabelas nutricionais** são valores de **referência** para cada tipo de produto e aparecem com esse aviso. Copie a tabela da embalagem de cada item para `lib/catalogo.js` e marque `confirmada: true`.
+**Tabelas nutricionais**: as da Idealpan, Dona Creuza e Tinô foram copiadas do site oficial (www.idealpan.com.br), junto com ingredientes, alérgicos e modo de preparo. Elas mostram o link da fonte. As da **Tia Tânia** ainda são valores de **referência** e aparecem com aviso, porque o site tiatania.com.br não respondeu. Quando tiver a tabela da embalagem, copie-a para `lib/catalogo.js` e marque `confirmada: true`.
 
 ## Compras, contas a pagar e fluxo de caixa (administrador)
 

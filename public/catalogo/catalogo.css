@@ -23,9 +23,10 @@ button,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--ouro);outline-offset:2px}
 
-/* topo */
-.topo{position:sticky;top:0;z-index:10;background:var(--verm);color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.15)}
-.topo-in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center}
+/* topo (a faixa acima do topo, no celular, tem a mesma cor) */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:11;background:var(--verm)}
+.topo{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--verm);color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.topo-in{max-width:1180px;margin:0 auto;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:12px;align-items:center}
 .marca{font-family:"Trebuchet MS",system-ui,sans-serif;font-size:26px;line-height:1;font-weight:600;letter-spacing:.5px;display:flex;flex-direction:column}
 .marca small{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.85}
 .busca{flex:1;min-width:0}
@@ -34,13 +35,13 @@ button{cursor:pointer}
 .btn-carrinho b{background:#3b1d10;color:#fff;border-radius:999px;min-width:22px;padding:1px 7px;font-size:13px;text-align:center}
 .btn-carrinho.pulo{animation:pulo .35s}
 @keyframes pulo{50%{transform:scale(1.12)}}
-.secoes{max-width:1180px;margin:0 auto;padding:0 16px 10px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.secoes{max-width:1180px;margin:0 auto;padding-block:0 10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
 .secoes::-webkit-scrollbar{display:none}
 .secoes button{border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:999px;padding:5px 13px;white-space:nowrap;font-size:14px}
 .secoes button[aria-pressed="true"]{background:#fff;color:var(--verm2);border-color:#fff;font-weight:600}
 
 /* lista */
-.conteudo{max-width:1180px;margin:0 auto;padding:12px 16px 110px}
+.conteudo{max-width:1180px;margin:0 auto;padding-block:12px 110px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .status{margin:4px 0 8px;color:var(--suave);font-size:13px}
 .secao{margin:22px 0 8px}
 .secao h2{display:inline-block;margin:0 0 14px;padding:6px 18px 6px 14px;background:var(--verm);color:#fff;font-style:italic;font-size:20px;border-radius:4px 22px 22px 4px;letter-spacing:.3px}
@@ -135,11 +136,11 @@ h3.tit{margin:6px 0 0;font-size:15px}
 .c-rodape .lin{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 
 /* flutuantes */
-.whats-flutuante{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:5;background:var(--whats);color:#fff;border-radius:999px;padding:12px 18px 12px 14px;display:flex;gap:8px;align-items:center;font-weight:700;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.whats-flutuante{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom));z-index:5;background:var(--whats);color:#fff;border-radius:999px;padding:12px 18px 12px 14px;display:flex;gap:8px;align-items:center;font-weight:700;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .whats-flutuante svg{width:24px;height:24px}
 .aviso{position:fixed;left:50%;bottom:84px;transform:translate(-50%,20px);background:#2b1a12;color:#fff;padding:10px 16px;border-radius:10px;opacity:0;pointer-events:none;transition:.2s;z-index:20;max-width:calc(100% - 32px);text-align:center}
 .aviso.on{opacity:1;transform:translate(-50%,0)}
-.rodape{max-width:1180px;margin:0 auto;padding:0 16px 90px;color:var(--suave);font-size:12px}
+.rodape{max-width:1180px;margin:0 auto;padding-block:0 90px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));color:var(--suave);font-size:12px}
 
 @media (max-width:700px){
   .topo-in{flex-wrap:wrap;gap:8px}

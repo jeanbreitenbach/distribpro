@@ -19,7 +19,9 @@
 
   /* ---------- WhatsApp ---------- */
   const linkWhats = txt => `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(txt)}`;
-  const abrirWhats = txt => { window.open(linkWhats(txt), '_blank', 'noopener'); };
+  // Os botões de WhatsApp são links comuns: a mensagem é montada no clique, antes de o link abrir.
+  const linkW = (attrs, txt) => `<a class="btn whats" ${attrs} href="${linkWhats(saudacao())}" target="_blank" rel="noopener">${txt}</a>`;
+  const imagem = u => (window.CATALOGO_BASE !== undefined ? window.CATALOGO_BASE + u.replace(/^\//, '') : u); // página publicada fora do servidor
   const saudacao = () => `Olá, ${CONFIG.atendente}!`;
   function linhaItem(p, qtd, comPreco) {
     const pr = precos[p.codigo]; let s = `• ${qtd}x ${p.nomeCompleto} [${p.codigo}]`;
@@ -45,6 +47,7 @@
 
   /* ---------- preço e estoque ---------- */
   async function carregarPrecos() {
+    if (window.CATALOGO_SEM_API) { $('#status').textContent = `Preços e estoque sob consulta com o ${CONFIG.atendente} pelo WhatsApp.`; return; }
     try {
       const r = await fetch('/api/catalogo', { cache: 'no-store' }); if (!r.ok) throw new Error();
       const j = await r.json(); precos = Object.fromEntries(j.itens.map(i => [i.codigo, i]));
@@ -70,7 +73,7 @@
     $('#secoes').innerHTML = [['', 'Todos'], ...SECOES.map(s => [s.id, s.nome])]
       .map(([id, nome]) => `<button type="button" data-secao="${id}" aria-pressed="${filtro.secao === id}">${esc(nome)}</button>`).join('');
   }
-  const normal = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const normal = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   function desenhar() {
     const q = normal(filtro.q);
     const html = SECOES.filter(s => !filtro.secao || s.id === filtro.secao).map(s => {
@@ -84,7 +87,7 @@
     const pr = precos[p.codigo]; const esgotado = pr && pr.situacao === 'Esgotado';
     return `<article class="card">
       <button type="button" class="card-abrir" data-abrir="${p.codigo}" aria-label="Ver detalhes e tabela nutricional de ${esc(p.nome)} ${esc(p.detalhe)} ${esc(p.embalagem)}">
-        <img src="${p.imagem}" alt="" loading="lazy" width="360" height="360">
+        <img src="${imagem(p.imagem)}" alt="" loading="lazy" width="360" height="360">
         <span class="selos">${p.selos.map(s => `<span class="selo">${esc(s)}</span>`).join('')}</span>
         <span class="emb">${esc(p.embalagem)}</span>
       </button>
@@ -123,7 +126,7 @@
     j.dataset.codigo = codigo;
     j.innerHTML = `<div class="j-topo"><h2 id="pTitulo">${esc(p.nome)}</h2><button type="button" class="fechar" data-fechar aria-label="Fechar">×</button></div>
       <div class="j-corpo">
-        <div class="j-img"><img src="${p.imagem}" alt="Embalagem de ${esc(p.nome)} ${esc(p.embalagem)}" width="360" height="360"></div>
+        <div class="j-img"><img src="${imagem(p.imagem)}" alt="Embalagem de ${esc(p.nome)} ${esc(p.embalagem)}" width="360" height="360"></div>
         <div class="j-info">
           ${p.detalhe ? `<span class="detalhe">${esc(p.detalhe)}</span>` : ''}
           <div class="fatos">
@@ -133,9 +136,9 @@
           <div class="caixa-preco">${blocoPreco(p)}${seloEstoque(pr) || `<span class="consulta">Estoque sob consulta</span>`}</div>
           <div class="acoes-j">
             <div class="add">${seletor(codigo, qtdAtual, 'janela')}<button type="button" class="btn pri" data-add="${codigo}">Adicionar ao carrinho</button></div>
-            <button type="button" class="btn whats" data-whats="orcamento">💬 Solicitar orçamento</button>
-            <button type="button" class="btn whats" data-whats="pedido">✅ Fazer pedido</button>
-            ${pr && pr.preco ? '' : `<button type="button" class="btn sec" data-whats="consulta" style="grid-column:1/-1">Consultar preço e estoque com o ${esc(CONFIG.atendente)}</button>`}
+            ${linkW('data-whats="orcamento"', '💬 Solicitar orçamento')}
+            ${linkW('data-whats="pedido"', '✅ Fazer pedido')}
+            ${pr && pr.preco ? '' : `<a class="btn sec" data-whats="consulta" href="${linkWhats(saudacao())}" target="_blank" rel="noopener" style="grid-column:1/-1">Consultar preço e estoque com o ${esc(CONFIG.atendente)}</a>`}
           </div>
           ${tabelaNutricional(p.nutricao)}
           ${p.alergicos ? `<p class="alerg"><b>Alérgicos:</b> ${esc(p.alergicos)}</p>` : ''}
@@ -149,9 +152,10 @@
     if (!porCodigo[codigo]) return;
     desenharProduto(codigo); const j = $('#janelaProduto');
     if (!j.open) j.showModal(); j.scrollTop = 0;
-    if (location.hash !== '#p=' + codigo) history.replaceState(null, '', '#p=' + codigo); // link direto para o produto
+    if (location.hash !== '#' + codigo) history.replaceState(null, '', '#' + codigo); // link direto para o produto
   }
-  $('#janelaProduto').addEventListener('close', () => { if (location.hash.startsWith('#p=')) history.replaceState(null, '', location.pathname + location.search); });
+  const codigoDoHash = () => decodeURIComponent(location.hash.slice(1)).replace(/^p=/, ''); // aceita também o formato antigo #p=CODIGO
+  $('#janelaProduto').addEventListener('close', () => { if (porCodigo[codigoDoHash()]) history.replaceState(null, '', location.pathname + location.search); });
 
   /* ---------- carrinho ---------- */
   const itensCarrinho = () => Object.entries(carrinho).filter(([c, q]) => porCodigo[c] && q > 0).map(([c, q]) => [porCodigo[c], q]);
@@ -175,7 +179,7 @@
       <div class="c-corpo">
         ${itens.length ? itens.map(([p, q]) => {
           const pr = precos[p.codigo]; const falta = pr && pr.estoque !== undefined && q > pr.estoque;
-          return `<div class="c-item"><img src="${p.imagem}" alt="">
+          return `<div class="c-item"><img src="${imagem(p.imagem)}" alt="">
             <div><div class="nome">${esc(p.nome)}${p.detalhe ? ' — ' + esc(p.detalhe) : ''}</div>
               <div class="sub">${esc(p.embalagem)} · un. ${esc(p.unidadePeso)} · ${pr && pr.preco ? brl(pr.preco) : 'preço sob consulta'}</div>
               ${falta ? `<div class="alerta-est">Estoque atual: ${num(pr.estoque)}. O atendente confirma o restante.</div>` : ''}</div>
@@ -193,8 +197,8 @@
           </form>` : ''}
       </div>
       ${itens.length ? `<div class="c-rodape"><div class="lin">
-          <button type="button" class="btn whats" data-whats-carrinho="orcamento">💬 Solicitar orçamento</button>
-          <button type="button" class="btn whats" data-whats-carrinho="pedido">✅ Enviar pedido</button></div>
+          ${linkW('data-whats-carrinho="orcamento"', '💬 Solicitar orçamento')}
+          ${linkW('data-whats-carrinho="pedido"', '✅ Enviar pedido')}</div>
           <button type="button" class="btn link" data-limpar>Esvaziar carrinho</button></div>` : ''}`;
   }
   function lerCliente() {
@@ -214,18 +218,22 @@
     if (t.dataset.add) { const box = t.parentElement.querySelector('.qtd'); adicionar(t.dataset.add, qtdDe(box)); if (box.dataset.onde === 'card') box.querySelector('input').value = 1; return; }
     if (t.dataset.whats) {
       const j = $('#janelaProduto'), p = porCodigo[j.dataset.codigo], q = qtdDe(j.querySelector('[data-onde="janela"]'));
-      if (t.dataset.whats === 'consulta') return abrirWhats(`${saudacao()} Pode me informar o preço e o estoque de: ${p.nomeCompleto} [${p.codigo}]?`);
-      return abrirWhats(msgItens(t.dataset.whats, [[p, q]]));
+      t.href = linkWhats(t.dataset.whats === 'consulta' ? `${saudacao()} Pode me informar o preço e o estoque de: ${p.nomeCompleto} [${p.codigo}]?` : msgItens(t.dataset.whats, [[p, q]]));
+      return;
     }
     if (t.dataset.whatsCarrinho) {
       lerCliente(); const pedido = t.dataset.whatsCarrinho === 'pedido';
-      if (pedido && (!cliente.nome || !cliente.cidade)) { aviso('Para enviar o pedido, informe seu nome e cidade.'); $('#formCliente').elements[cliente.nome ? 'cidade' : 'nome'].focus(); return; }
-      abrirWhats(msgItens(t.dataset.whatsCarrinho, itensCarrinho()));
+      if (pedido && (!cliente.nome || !cliente.cidade)) { e.preventDefault(); aviso('Para enviar o pedido, informe seu nome e cidade.'); $('#formCliente').elements[cliente.nome ? 'cidade' : 'nome'].focus(); return; }
+      t.href = linkWhats(msgItens(t.dataset.whatsCarrinho, itensCarrinho()));
       if (pedido) aviso('Pedido aberto no WhatsApp. É só tocar em enviar.');
       return;
     }
     if (t.dataset.remover) { delete carrinho[t.dataset.remover]; salvarCarrinho(); lerCliente(); desenharCarrinho(); return; }
-    if (t.dataset.limpar !== undefined) { if (confirm('Esvaziar o carrinho?')) { carrinho = {}; salvarCarrinho(); desenharCarrinho(); } return; }
+    if (t.dataset.limpar !== undefined) { // confirmação na própria página (sem caixa de diálogo do navegador)
+      if (t.dataset.confirmar) { carrinho = {}; salvarCarrinho(); desenharCarrinho(); }
+      else { t.dataset.confirmar = '1'; t.textContent = 'Toque de novo para esvaziar o carrinho'; setTimeout(() => { if (t.isConnected) { delete t.dataset.confirmar; t.textContent = 'Esvaziar carrinho'; } }, 4000); }
+      return;
+    }
     if (t.dataset.fechar !== undefined) { lerCliente(); t.closest('dialog').close(); return; }
   });
   function mudarNoCarrinho(codigo, v) {
@@ -240,7 +248,7 @@
   for (const d of document.querySelectorAll('dialog')) d.addEventListener('click', e => { if (e.target === d) { lerCliente(); d.close(); } }); // clique fora fecha
   $('#abrirCarrinho').addEventListener('click', () => { desenharCarrinho(); $('#janelaCarrinho').showModal(); });
   let tBusca; $('#busca').addEventListener('input', e => { clearTimeout(tBusca); tBusca = setTimeout(() => { filtro.q = e.target.value.trim(); desenhar(); }, 120); });
-  window.addEventListener('hashchange', () => { const m = location.hash.match(/^#p=(.+)$/); if (m) abrirProduto(decodeURIComponent(m[1])); });
+  window.addEventListener('hashchange', () => { const c = codigoDoHash(); if (porCodigo[c]) abrirProduto(c); });
 
   let tAviso; function aviso(msg) { const a = $('#aviso'); a.textContent = msg; a.classList.add('on'); clearTimeout(tAviso); tAviso = setTimeout(() => a.classList.remove('on'), 2600); }
 
@@ -249,7 +257,7 @@
   $('#whatsFlutuante').href = linkWhats(`${saudacao()} Vim pelo catálogo e gostaria de atendimento.`);
   $('#whatsFlutuanteTxt').textContent = `Falar com o ${CONFIG.atendente}`;
   desenharSecoes(); desenhar(); salvarCarrinho();
-  const m = location.hash.match(/^#p=(.+)$/); if (m) abrirProduto(decodeURIComponent(m[1]));
+  if (porCodigo[codigoDoHash()]) abrirProduto(codigoDoHash());
   carregarPrecos(); setInterval(() => { if (!document.hidden) carregarPrecos(); }, 60e3);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) carregarPrecos(); });
 })();

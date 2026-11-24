@@ -33,7 +33,7 @@ As regras são aplicadas **no servidor**. Por exemplo: o cliente não consegue a
 Endereço: **`/catalogo`** (ex.: `https://seu-sistema.onrender.com/catalogo`). Não precisa de login: é para mandar aos clientes. Também abre pelo botão **🛒 Ver catálogo** na tela *Produtos*.
 
 - **Produtos da Linha Varejo** (Idealpan, Tia Tânia, Mix, Empanados, Dona Creuza e Low Price), com busca e filtro por linha.
-- **Clicar no produto** abre a janela com foto, embalagem, peso da unidade, **tabela nutricional**, modo de preparo e conservação. Cada produto tem link próprio (`/catalogo#p=CODIGO`), bom para mandar no WhatsApp.
+- **Clicar no produto** abre a janela com foto, embalagem, peso da unidade, **tabela nutricional**, modo de preparo e conservação. Cada produto tem link próprio (`/catalogo#CODIGO`, ex.: `/catalogo#IP-TRAD-2KG`), bom para mandar no WhatsApp.
 - Botões **Solicitar orçamento** e **Fazer pedido**, que abrem o WhatsApp **(48) 99941-0749** com a mensagem pronta para o Marcos.
 - **Carrinho**: guarda os itens no aparelho, calcula o total estimado e envia o pedido ou o orçamento completo pelo WhatsApp, com os dados do cliente (nome, CNPJ/CPF, cidade, telefone e observações).
 - **Preço e estoque ao vivo**: vêm do cadastro de produtos do DistribPro, pelo **código** do produto (ex.: `IP-TRAD-2KG`), e se atualizam a cada minuto. Use **Produtos → Cadastrar itens do catálogo** para criar de uma vez os produtos que faltam (entram com preço e estoque zerados) e depois preencha preço e estoque. Produto sem preço aparece como *Preço sob consulta*, com o botão *Consultar preço e estoque com o Marcos*.

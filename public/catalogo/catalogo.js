@@ -27,9 +27,10 @@
   const kgPacote = p => { const m = String(p.embalagem).replace(',', '.').match(/([\d.]+)\s*(kg|g)/i); return m ? Number(m[1]) / (m[2].toLowerCase() === 'g' ? 1000 : 1) : 1; };
   /** Preço de um pacote: quando a tabela é por quilo (unidade KG), multiplica pelo peso do pacote. */
   const precoPacote = (p, pr = precos[p.codigo]) => (pr && pr.preco ? Math.round(pr.preco * (String(pr.unidade).toUpperCase() === 'KG' ? kgPacote(p) : 1) * 100) / 100 : 0);
+  const porKg = pr => String(pr.unidade).toUpperCase() === 'KG';
   function linhaItem(p, qtd, comPreco) {
     const pr = precos[p.codigo]; let s = `• ${qtd}x ${p.nomeCompleto} [${p.codigo}]`;
-    if (comPreco && pr && pr.preco) s += ` — ${brl(precoPacote(p))} o pacote = ${brl(precoPacote(p) * qtd)}`;
+    if (comPreco && pr && pr.preco) s += porKg(pr) ? ` — ${brl(pr.preco)}/kg (${num(kgPacote(p) * qtd)} kg) = ${brl(precoPacote(p) * qtd)}` : ` — ${brl(pr.preco)} = ${brl(pr.preco * qtd)}`;
     return s;
   }
   function dadosCliente() {
@@ -75,7 +76,7 @@
   function blocoPreco(p) {
     const pr = precos[p.codigo];
     if (!pr || !pr.preco) return `<span class="consulta">Preço sob consulta</span>`;
-    if (String(pr.unidade).toUpperCase() === 'KG') return `<span class="preco">${brl(precoPacote(p))} <small>o pacote de ${esc(p.embalagem)}</small></span><span class="por-kg">${brl(pr.preco)} o kg</span>`;
+    if (porKg(pr)) return `<span class="preco">${brl(pr.preco)} <small>o kg</small></span>`;
     return `<span class="preco">${brl(pr.preco)} <small>/${esc(pr.unidade.toLowerCase())}</small></span>`;
   }
 
@@ -192,7 +193,7 @@
           const pr = precos[p.codigo]; const falta = pr && pr.estoque !== undefined && q > pr.estoque;
           return `<div class="c-item"><img src="${imagem(p.imagem)}" alt="">
             <div><div class="nome">${esc(p.nome)}${p.detalhe ? ' — ' + esc(p.detalhe) : ''}</div>
-              <div class="sub">${esc(p.embalagem)} · un. ${esc(p.unidadePeso)} · ${pr && pr.preco ? brl(precoPacote(p)) + ' o pacote' : 'preço sob consulta'}</div>
+              <div class="sub">${esc(p.embalagem)} · un. ${esc(p.unidadePeso)} · ${pr && pr.preco ? brl(pr.preco) + (porKg(pr) ? ' o kg' : '') : 'preço sob consulta'}</div>
               ${falta ? `<div class="alerta-est">Estoque atual: ${num(pr.estoque)}. O atendente confirma o restante.</div>` : ''}</div>
             <div class="c-dir">${seletor(p.codigo, q, 'carrinho')}<button type="button" class="remover" data-remover="${p.codigo}">Remover</button></div></div>`;
         }).join('') : '<p class="vazio">Seu carrinho está vazio.<br>Toque em <b>Adicionar</b> nos produtos.</p>'}

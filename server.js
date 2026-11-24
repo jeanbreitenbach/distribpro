@@ -14,6 +14,7 @@ const { DatabaseSync } = require('node:sqlite');
 const R = require('./lib/regras');
 const NFE = require('./lib/nfe');
 const { seedDemo, baseVazia } = require('./lib/seed');
+const CATALOGO = require('./lib/catalogo');
 
 const PORT = Number(process.env.PORT) || 3000;
 const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'data', 'distribpro.db');
@@ -239,7 +240,7 @@ function statusPedido(u, id, { status, forcar }) {
 }
 
 /* ================= HTTP ================= */
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
 function enviar(res, status, obj, headers = {}) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers }); res.end(JSON.stringify(obj));
 }
@@ -257,10 +258,12 @@ function lerCorpo(req) {
 function estatico(req, res) {
   let f = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (f === '/regras.js') f = path.join(__dirname, 'lib', 'regras.js');
+  else if (f === '/catalogo-dados.js') f = path.join(__dirname, 'lib', 'catalogo.js');
+  else if (f === '/catalogo' || f === '/catalogo/') f = path.join(__dirname, 'public', 'catalogo.html');
   else { if (f === '/' || !path.extname(f)) f = '/index.html'; f = path.join(__dirname, 'public', path.normalize(f)); if (!f.startsWith(path.join(__dirname, 'public'))) return enviar(res, 404, {}); }
   fs.readFile(f, (e, buf) => {
     if (e) return enviar(res, 404, { erro: 'Não encontrado' });
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'same-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self)', 'Cache-Control': /\.(png|svg|ico)$/.test(f) ? 'public, max-age=86400' : 'no-cache' }); res.end(buf);
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'same-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self)', 'Cache-Control': /\.(png|jpg|svg|ico)$/.test(f) ? 'public, max-age=86400' : 'no-cache' }); res.end(buf);
   });
 }
 
@@ -288,6 +291,28 @@ rota('POST', '/api/login', (req, b) => {
 
 rota('GET', '/api/health', () => ({ status: 'ok' }), { publica: true });
 rota('GET', '/api/data', () => null);
+
+/* ---- Catálogo público (/catalogo): preço base e estoque dos produtos com o mesmo código do catálogo ----
+ * CATALOGO_PRECOS=nao esconde os preços; CATALOGO_ESTOQUE=situacao mostra só "Disponível/Últimas unidades/Esgotado", =nao esconde. */
+rota('GET', '/api/catalogo', () => {
+  const precos = process.env.CATALOGO_PRECOS !== 'nao', modoEst = ['situacao', 'nao'].includes(process.env.CATALOGO_ESTOQUE) ? process.env.CATALOGO_ESTOQUE : 'quantidade';
+  const codigos = new Set(CATALOGO.PRODUTOS.map(c => c.codigo));
+  const itens = db.produtos.filter(p => p.ativo !== 'Não' && codigos.has(p.codigo)).map(p => {
+    const est = Number(p.estoque) || 0;
+    return { codigo: p.codigo, unidade: p.unidade || 'UN', ...(precos && p.preco > 0 ? { preco: p.preco } : {}),
+      ...(modoEst === 'nao' ? {} : { situacao: est <= 0 ? 'Esgotado' : est <= (Number(p.estoqueMin) || 0) ? 'Últimas unidades' : 'Disponível' }),
+      ...(modoEst === 'quantidade' ? { estoque: Math.max(0, est) } : {}) };
+  });
+  return { itens, empresa: db.empresa.fantasia || db.empresa.nome, atualizado: new Date().toISOString() };
+}, { publica: true });
+rota('POST', '/api/catalogo/importar', (req, b, u) => {
+  exigir(u.papel === 'admin');
+  const existentes = new Set(db.produtos.map(p => p.codigo)); let n = 0;
+  for (const c of CATALOGO.PRODUTOS) if (!existentes.has(c.codigo)) {
+    db.produtos.push({ id: uid(), codigo: c.codigo, nome: c.nomeCompleto, categoria: 'Congelados', marca: c.marca, unidade: 'PCT', ean: '', ncm: '', custo: 0, preco: 0, estoque: 0, estoqueMin: 0, ativo: 'Sim' }); n++;
+  }
+  return { criados: n };
+}, { grava: true });
 rota('POST', '/api/senha', (req, b, u) => {
   exigir(conferirSenha(b.atual || '', u.senha), 'Senha atual incorreta', 400);
   exigir(String(b.nova || '').length >= 6, 'A nova senha deve ter pelo menos 6 caracteres', 400);

@@ -97,3 +97,4 @@ svg text{fill:var(--muted);font-size:11px}
 .hint{font-size:12px;color:var(--muted)}
 .edit-grid{grid-template-columns:1fr 320px}
 @media (max-width:700px){.edit-grid{grid-template-columns:1fr}.totals{margin:0;max-width:none}}
+a.btn{text-decoration:none}

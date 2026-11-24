@@ -238,6 +238,20 @@ test('arquivos estáticos, segurança e app instalável', async () => {
   assert.ok(!trav.includes('createServer'), 'não expõe o código do servidor');
 });
 
+/* ---------------- Catálogo público ---------------- */
+test('catálogo público: página, preço e estoque sem login, sem custo', async () => {
+  const pg = await fetch(`http://127.0.0.1:${PORTA}/catalogo`); const html = await pg.text();
+  assert.equal(pg.status, 200); assert.match(html, /catalogo\/catalogo\.js/);
+  assert.match(await (await fetch(`http://127.0.0.1:${PORTA}/catalogo-dados.js`)).text(), /5548999410749/);
+  const img = await fetch(`http://127.0.0.1:${PORTA}/catalogo/img/tino.jpg`); assert.equal(img.headers.get('content-type'), 'image/jpeg');
+  const r = await req('GET', '/api/catalogo');
+  assert.equal(r.status, 200); assert.equal(r.json.itens.length, require('../lib/catalogo').PRODUTOS.length);
+  for (const i of r.json.itens) { assert.ok(i.preco > 0 && i.estoque >= 0 && i.situacao); assert.equal(i.custo, undefined); assert.equal(i.id, undefined); }
+  assert.equal(r.json.itens.find(i => i.codigo === 'IP-GOUR-800').situacao, 'Últimas unidades');
+  assert.equal((await req('POST', '/api/catalogo/importar', {}, T.vend)).status, 403);
+  assert.equal((await req('POST', '/api/catalogo/importar', {}, T.admin)).json.criados, 0, 'demo já tem os itens do catálogo');
+});
+
 /* ---------------- Backup, restauração e operação ---------------- */
 test('backup e restauração', async () => {
   const bk = (await req('GET', '/api/backup', undefined, T.admin)).json.backup;

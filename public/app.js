@@ -431,8 +431,14 @@ function cartFinalizar() {
 }
 
 /* ---------- Cadastros ---------- */
+async function importarCatalogo() {
+  if (!confirm('Cadastrar os produtos do catálogo (/catalogo) que ainda não existem? Eles entram com preço e estoque zerados, para você completar. O catálogo mostra preço e estoque dos produtos com o mesmo código.')) return;
+  const r = await acao(() => api('POST', '/api/catalogo/importar'));
+  if (r) toast(r.criados ? `${r.criados} produto(s) do catálogo cadastrados. Preencha preço, estoque e NCM.` : 'Todos os itens do catálogo já estão cadastrados.');
+}
 VIEWS.produtos = () => {
-  if (isAdmin()) setActions(`<button class="btn" onclick="exportCSV('produtos')">Exportar CSV</button><button class="btn pri" onclick="editar('produtos')">+ Novo produto</button>`);
+  if (isAdmin()) setActions(`<a class="btn" href="/catalogo" target="_blank" rel="noopener">🛒 Ver catálogo</a><button class="btn" onclick="importarCatalogo()">Cadastrar itens do catálogo</button><button class="btn" onclick="exportCSV('produtos')">Exportar CSV</button><button class="btn pri" onclick="editar('produtos')">+ Novo produto</button>`);
+  else setActions(`<a class="btn" href="/catalogo" target="_blank" rel="noopener">🛒 Ver catálogo</a>`);
   const s = state; const cats = [...new Set(db.produtos.map(p => p.categoria))];
   const rows = db.produtos.filter(p => match(s.q, p.nome, p.codigo, p.marca, p.ean) && (!s.cat || p.categoria === s.cat) && (!s.baixo || p.estoque <= p.estoqueMin)).map(p => ({ ...p, _click: `editar('produtos','${p.id}')` }));
   const cols = [['Código', p => esc(p.codigo)], ['Descrição', p => `<b>${esc(p.nome)}</b>${p.ativo === 'Não' ? ' <span class="badge b-mut">inativo</span>' : ''}`], ['Categoria', p => esc(p.categoria)], ['Un', p => p.unidade]];

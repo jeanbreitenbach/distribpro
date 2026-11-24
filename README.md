@@ -28,6 +28,20 @@ Abra http://localhost:3000. Na primeira execução o sistema cria o banco `data/
 
 As regras são aplicadas **no servidor**. Por exemplo: o cliente não consegue alterar preço nem desconto, e o vendedor não acessa clientes de outro vendedor.
 
+## Catálogo interativo (público, com carrinho e WhatsApp)
+
+Endereço: **`/catalogo`** (ex.: `https://seu-sistema.onrender.com/catalogo`). Não precisa de login: é para mandar aos clientes. Também abre pelo botão **🛒 Ver catálogo** na tela *Produtos*.
+
+- **Produtos da Linha Varejo** (Idealpan, Tia Tânia, Mix, Empanados, Dona Creuza e Low Price), com busca e filtro por linha.
+- **Clicar no produto** abre a janela com foto, embalagem, peso da unidade, **tabela nutricional**, modo de preparo e conservação. Cada produto tem link próprio (`/catalogo#p=CODIGO`), bom para mandar no WhatsApp.
+- Botões **Solicitar orçamento** e **Fazer pedido**, que abrem o WhatsApp **(48) 99941-0749** com a mensagem pronta para o Marcos.
+- **Carrinho**: guarda os itens no aparelho, calcula o total estimado e envia o pedido ou o orçamento completo pelo WhatsApp, com os dados do cliente (nome, CNPJ/CPF, cidade, telefone e observações).
+- **Preço e estoque ao vivo**: vêm do cadastro de produtos do DistribPro, pelo **código** do produto (ex.: `IP-TRAD-2KG`), e se atualizam a cada minuto. Use **Produtos → Cadastrar itens do catálogo** para criar de uma vez os produtos que faltam (entram com preço e estoque zerados) e depois preencha preço e estoque. Produto sem preço aparece como *Preço sob consulta*, com o botão *Consultar preço e estoque com o Marcos*.
+- O catálogo nunca mostra custo nem margem. `CATALOGO_PRECOS=nao` esconde os preços; `CATALOGO_ESTOQUE=situacao` mostra só *Disponível / Últimas unidades / Esgotado*; `CATALOGO_ESTOQUE=nao` esconde o estoque.
+- **Editar o catálogo** (número do WhatsApp, nome do atendente, produtos, tabelas nutricionais): arquivo `lib/catalogo.js`. Fotos em `public/catalogo/img/`.
+
+⚠️ As **tabelas nutricionais** são valores de **referência** para cada tipo de produto e aparecem com esse aviso. Copie a tabela da embalagem de cada item para `lib/catalogo.js` e marque `confirmada: true`.
+
 ## Compras, contas a pagar e fluxo de caixa (administrador)
 
 - **Fornecedores**: cadastro com CNPJ, contato, prazo padrão de pagamento e dados de PIX/banco. Mostra o histórico de compras e o que está em aberto com cada um.
@@ -150,7 +164,7 @@ Coloque um proxy com **HTTPS** na frente (Caddy, Nginx). Sem HTTPS, as senhas tr
 ## Testes automáticos
 
 ```bash
-npm test          # 20 testes de ponta a ponta da API (todos os módulos e permissões)
+npm test          # 21 testes de ponta a ponta da API (todos os módulos e permissões)
 npm run test:ui   # abre todas as telas e janelas dos 3 perfis no computador e no celular (requer Playwright)
 ```
 
@@ -187,6 +201,8 @@ O que **já está pronto** no sistema: todos os módulos, os testes, o backup e 
 | `TZ` | `America/Sao_Paulo` | Fuso horário das datas do sistema |
 | `BACKUP_DIAS` | `14` | Quantos backups diários manter (`0` desliga) |
 | `BACKUP_DIR` | `data/backups` | Pasta dos backups automáticos |
+| `CATALOGO_PRECOS` | `sim` | `nao` esconde os preços no catálogo público |
+| `CATALOGO_ESTOQUE` | `quantidade` | `situacao` (só disponível/esgotado) ou `nao` (esconde) no catálogo público |
 | `TRUST_PROXY` | — | `1` quando estiver atrás de proxy/HTTPS, para identificar o IP real no bloqueio de login |
 
 ## Estrutura
@@ -201,6 +217,8 @@ public/visitas.js  agenda de visitas, roteiro, check-in e relatório de visitas
 public/offline.js  modo offline: cópia local dos dados e fila de pedidos/visitas
 public/sw.js       service worker (abre o app sem internet)
 lib/seed.js        dados de demonstração
+lib/catalogo.js    produtos, nutrição e WhatsApp do catálogo público (/catalogo)
+public/catalogo*   página do catálogo, carrinho e fotos
 public/            interface web (HTML/CSS/JS, sem build)
 exemplos/          XML de NF-e e extrato OFX fictícios para testar as importações
 data/              banco SQLite (criado automaticamente)

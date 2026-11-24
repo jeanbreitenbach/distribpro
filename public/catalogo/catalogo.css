@@ -77,6 +77,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .btn.pri:hover{background:var(--verm2)}
 .btn.whats{background:var(--whats);color:#fff}
 .btn.whats:hover{filter:brightness(.93)}
+.btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
+#dicaPedido{margin:0;text-align:center}
 .btn.sec{background:var(--ouro-suave);color:var(--texto);border:1px solid var(--ouro)}
 .btn.link{background:transparent;color:var(--suave);font-weight:600;padding:6px}
 .vazio{padding:40px 0;text-align:center;color:var(--suave)}

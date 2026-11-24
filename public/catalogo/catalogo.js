@@ -65,7 +65,7 @@
       $('#status').textContent = j.itens.length ? `Preços e estoque${j.fonte === 'mercos' ? ' do Mercos' : ''} atualizados às ${h}.` : `Preços e estoque sob consulta com o ${CONFIG.atendente}.`;
     } catch { $('#status').textContent = `Não foi possível carregar preços e estoque agora. Consulte o ${CONFIG.atendente} pelo WhatsApp.`; }
     desenhar(); if ($('#janelaCarrinho').open) desenharCarrinho();
-    const aberto = $('#janelaProduto').dataset.codigo; if ($('#janelaProduto').open && aberto) desenharProduto(aberto, true);
+    const aberto = $('#janelaProduto').dataset.codigo; if ($('#janelaProduto').open && aberto) { desenharProduto(aberto, true); atualizarLinks(); }
   }
   function seloEstoque(pr) {
     if (!pr || !pr.situacao) return '';
@@ -162,7 +162,7 @@
   }
   function abrirProduto(codigo) {
     if (!porCodigo[codigo]) return;
-    desenharProduto(codigo); const j = $('#janelaProduto');
+    desenharProduto(codigo); atualizarLinks(); const j = $('#janelaProduto');
     if (!j.open) j.showModal(); j.scrollTop = 0;
     if (location.hash !== '#' + codigo) history.replaceState(null, '', '#' + codigo); // link direto para o produto
   }
@@ -211,7 +211,24 @@
       ${itens.length ? `<div class="c-rodape"><div class="lin">
           ${linkW('data-whats-carrinho="orcamento"', '💬 Solicitar orçamento')}
           ${linkW('data-whats-carrinho="pedido"', '✅ Enviar pedido')}</div>
+          <p class="nota" id="dicaPedido">Para enviar o pedido, preencha nome e cidade.</p>
           <button type="button" class="btn link" data-limpar>Esvaziar carrinho</button></div>` : ''}`;
+    atualizarLinks();
+  }
+  /** Mantém os links de WhatsApp sempre com a mensagem completa (o visualizador pode abrir o link antes do clique ser tratado). */
+  function atualizarLinks() {
+    const j = $('#janelaProduto'), p = porCodigo[j.dataset.codigo], box = j.querySelector('[data-onde="janela"]');
+    if (p && box) {
+      const q = qtdDe(box);
+      for (const a of j.querySelectorAll('a[data-whats]')) a.href = linkWhats(a.dataset.whats === 'consulta'
+        ? `${saudacao()} Pode me informar o preço e o estoque de: ${p.nomeCompleto} [${p.codigo}]?` : msgItens(a.dataset.whats, [[p, q]]));
+    }
+    const itens = itensCarrinho(), faltaDados = !cliente.nome || !cliente.cidade;
+    for (const a of $('#janelaCarrinho').querySelectorAll('a[data-whats-carrinho]')) {
+      if (a.dataset.whatsCarrinho === 'pedido' && faltaDados) { a.removeAttribute('href'); a.setAttribute('aria-disabled', 'true'); }
+      else { a.href = linkWhats(msgItens(a.dataset.whatsCarrinho, itens)); a.removeAttribute('aria-disabled'); }
+    }
+    const dica = $('#dicaPedido'); if (dica) dica.hidden = !faltaDados;
   }
   function lerCliente() {
     const f = $('#formCliente'); if (!f) return;
@@ -225,18 +242,14 @@
     if (t.dataset.abrir) return abrirProduto(t.dataset.abrir);
     if (t.dataset.passo) {
       const box = t.closest('.qtd'), inp = box.querySelector('input'); const v = Math.max(box.dataset.onde === 'carrinho' ? 0 : 1, (Number(inp.value) || 0) + Number(t.dataset.passo));
-      inp.value = v; if (box.dataset.onde === 'carrinho') mudarNoCarrinho(box.dataset.qtdDe, v); return;
+      inp.value = v; if (box.dataset.onde === 'carrinho') mudarNoCarrinho(box.dataset.qtdDe, v); else atualizarLinks(); return;
     }
     if (t.dataset.add) { const box = t.parentElement.querySelector('.qtd'); adicionar(t.dataset.add, qtdDe(box)); if (box.dataset.onde === 'card') box.querySelector('input').value = 1; return; }
-    if (t.dataset.whats) {
-      const j = $('#janelaProduto'), p = porCodigo[j.dataset.codigo], q = qtdDe(j.querySelector('[data-onde="janela"]'));
-      t.href = linkWhats(t.dataset.whats === 'consulta' ? `${saudacao()} Pode me informar o preço e o estoque de: ${p.nomeCompleto} [${p.codigo}]?` : msgItens(t.dataset.whats, [[p, q]]));
-      return;
-    }
+    if (t.dataset.whats) { atualizarLinks(); return; }
     if (t.dataset.whatsCarrinho) {
       lerCliente(); const pedido = t.dataset.whatsCarrinho === 'pedido';
       if (pedido && (!cliente.nome || !cliente.cidade)) { e.preventDefault(); aviso('Para enviar o pedido, informe seu nome e cidade.'); $('#formCliente').elements[cliente.nome ? 'cidade' : 'nome'].focus(); return; }
-      t.href = linkWhats(msgItens(t.dataset.whatsCarrinho, itensCarrinho()));
+      atualizarLinks();
       if (pedido) aviso('Pedido aberto no WhatsApp. É só tocar em enviar.');
       return;
     }
@@ -254,9 +267,12 @@
   document.addEventListener('change', e => {
     const box = e.target.closest('.qtd'); if (!box) return;
     if (box.dataset.onde === 'carrinho') mudarNoCarrinho(box.dataset.qtdDe, Math.max(0, Math.floor(Number(e.target.value) || 0)));
-    else e.target.value = qtdDe(box);
+    else { e.target.value = qtdDe(box); atualizarLinks(); }
   });
-  document.addEventListener('input', e => { if (e.target.closest('#formCliente')) lerCliente(); });
+  document.addEventListener('input', e => {
+    if (e.target.closest('#formCliente')) { lerCliente(); atualizarLinks(); }
+    else if (e.target.closest('[data-onde="janela"]')) atualizarLinks();
+  });
   for (const d of document.querySelectorAll('dialog')) d.addEventListener('click', e => { if (e.target === d) { lerCliente(); d.close(); } }); // clique fora fecha
   $('#abrirCarrinho').addEventListener('click', () => { desenharCarrinho(); $('#janelaCarrinho').showModal(); });
   let tBusca; $('#busca').addEventListener('input', e => { clearTimeout(tBusca); tBusca = setTimeout(() => { filtro.q = e.target.value.trim(); desenhar(); }, 120); });

@@ -26,5 +26,9 @@ services:
         sync: false           # o Render pede o valor na criação
       - key: ADMIN_SENHA
         sync: false
+      - key: MERCOS_APPLICATION_TOKEN
+        sync: false
+      - key: MERCOS_COMPANY_TOKEN
+        sync: false
       - key: NFE_PROVEDOR
         value: simulado

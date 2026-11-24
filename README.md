@@ -37,6 +37,11 @@ Endereço: **`/catalogo`** (ex.: `https://seu-sistema.onrender.com/catalogo`). N
 - Botões **Solicitar orçamento** e **Fazer pedido**, que abrem o WhatsApp **(48) 99941-0749** com a mensagem pronta para o Marcos.
 - **Carrinho**: guarda os itens no aparelho, calcula o total estimado e envia o pedido ou o orçamento completo pelo WhatsApp, com os dados do cliente (nome, CNPJ/CPF, cidade, telefone e observações).
 - **Preço e estoque ao vivo**: vêm do cadastro de produtos do DistribPro, pelo **código** do produto (ex.: `IP-TRAD-2KG`), e se atualizam a cada minuto. Use **Produtos → Cadastrar itens do catálogo** para criar de uma vez os produtos que faltam (entram com preço e estoque zerados) e depois preencha preço e estoque. Produto sem preço aparece como *Preço sob consulta*, com o botão *Consultar preço e estoque com o Marcos*.
+- **Integração com o Mercos**: com os tokens do Mercos configurados, o catálogo passa a mostrar **preço e estoque do Mercos** em vez dos do DistribPro. O servidor lê os produtos pela API do Mercos (só leitura, nada é gravado lá) a cada 5 minutos.
+  - **Configurar** (no Render: *Environment*): `MERCOS_APPLICATION_TOKEN` e `MERCOS_COMPANY_TOKEN`, que são pedidos ao suporte do Mercos para integração via API. Opcionais: `MERCOS_TABELA_ID` (usa os preços dessa tabela de preço do Mercos), `MERCOS_AMBIENTE=sandbox` para testes e `MERCOS_INTERVALO_MIN`.
+  - **Vínculo dos produtos**: automático quando o código do produto no Mercos é igual ao do catálogo. Os outros são escolhidos em **Produtos → 🔗 Mercos**, que também mostra a situação da conexão e tem o botão *Ler o Mercos agora*.
+  - Produto excluído ou inativo no Mercos some do catálogo (fica *Preço sob consulta*). Sem controle de estoque no Mercos, aparece só o preço. *Últimas unidades* = até `CATALOGO_ESTOQUE_BAIXO` (padrão 10).
+  - ⚠️ Feita conforme a API v1 do Mercos (cabeçalhos `ApplicationToken`/`CompanyToken`, `/v1/produtos` e `/v1/produtos_tabela_preco` com `alterado_apos`) e testada contra um Mercos simulado. Confira com os tokens reais, de preferência primeiro no sandbox.
 - O catálogo nunca mostra custo nem margem. `CATALOGO_PRECOS=nao` esconde os preços; `CATALOGO_ESTOQUE=situacao` mostra só *Disponível / Últimas unidades / Esgotado*; `CATALOGO_ESTOQUE=nao` esconde o estoque.
 - **Editar o catálogo** (número do WhatsApp, nome do atendente, produtos, tabelas nutricionais): arquivo `lib/catalogo.js`. Fotos em `public/catalogo/img/`.
 
@@ -164,7 +169,7 @@ Coloque um proxy com **HTTPS** na frente (Caddy, Nginx). Sem HTTPS, as senhas tr
 ## Testes automáticos
 
 ```bash
-npm test          # 21 testes de ponta a ponta da API (todos os módulos e permissões)
+npm test          # 24 testes de ponta a ponta da API (inclui o Mercos simulado) (todos os módulos e permissões)
 npm run test:ui   # abre todas as telas e janelas dos 3 perfis no computador e no celular (requer Playwright)
 ```
 
@@ -203,6 +208,12 @@ O que **já está pronto** no sistema: todos os módulos, os testes, o backup e 
 | `BACKUP_DIR` | `data/backups` | Pasta dos backups automáticos |
 | `CATALOGO_PRECOS` | `sim` | `nao` esconde os preços no catálogo público |
 | `CATALOGO_ESTOQUE` | `quantidade` | `situacao` (só disponível/esgotado) ou `nao` (esconde) no catálogo público |
+| `MERCOS_APPLICATION_TOKEN` | — | Token da aplicação no Mercos (liga a integração) |
+| `MERCOS_COMPANY_TOKEN` | — | Token da empresa no Mercos |
+| `MERCOS_TABELA_ID` | — | Tabela de preço do Mercos usada no catálogo (padrão: preço de tabela do produto) |
+| `MERCOS_AMBIENTE` | `producao` | `sandbox` para testar |
+| `MERCOS_INTERVALO_MIN` | `5` | Minutos entre as leituras do Mercos |
+| `CATALOGO_ESTOQUE_BAIXO` | `10` | Estoque do Mercos que mostra *Últimas unidades* |
 | `TRUST_PROXY` | — | `1` quando estiver atrás de proxy/HTTPS, para identificar o IP real no bloqueio de login |
 
 ## Estrutura
@@ -217,6 +228,7 @@ public/visitas.js  agenda de visitas, roteiro, check-in e relatório de visitas
 public/offline.js  modo offline: cópia local dos dados e fila de pedidos/visitas
 public/sw.js       service worker (abre o app sem internet)
 lib/seed.js        dados de demonstração
+lib/mercos.js      leitura de produtos, preços e estoque do Mercos (API)
 lib/catalogo.js    produtos, nutrição e WhatsApp do catálogo público (/catalogo)
 public/catalogo*   página do catálogo, carrinho e fotos
 public/            interface web (HTML/CSS/JS, sem build)

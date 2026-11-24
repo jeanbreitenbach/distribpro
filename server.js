@@ -15,6 +15,7 @@ const R = require('./lib/regras');
 const NFE = require('./lib/nfe');
 const { seedDemo, baseVazia } = require('./lib/seed');
 const CATALOGO = require('./lib/catalogo');
+const MERCOS = require('./lib/mercos');
 
 const PORT = Number(process.env.PORT) || 3000;
 const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'data', 'distribpro.db');
@@ -292,19 +293,59 @@ rota('POST', '/api/login', (req, b) => {
 rota('GET', '/api/health', () => ({ status: 'ok' }), { publica: true });
 rota('GET', '/api/data', () => null);
 
-/* ---- Catálogo público (/catalogo): preço base e estoque dos produtos com o mesmo código do catálogo ----
+/* ---- Catálogo público (/catalogo): preço e estoque de cada item do catálogo ----
+ * Fonte: o Mercos, quando MERCOS_APPLICATION_TOKEN e MERCOS_COMPANY_TOKEN estão configurados (vínculo pelo código ou escolhido
+ * em Produtos → Mercos); senão, o cadastro de produtos do DistribPro com o mesmo código.
  * CATALOGO_PRECOS=nao esconde os preços; CATALOGO_ESTOQUE=situacao mostra só "Disponível/Últimas unidades/Esgotado", =nao esconde. */
+/** Para cada código do catálogo, o produto do Mercos vinculado (escolha manual ou mesmo código). */
+function vinculosMercos() {
+  const lista = MERCOS.produtos(), porId = new Map(lista.map(p => [p.id, p])), porCod = new Map(lista.filter(p => p.codigo).map(p => [p.codigo, p]));
+  const manual = db.empresa.mercosVinculos || {}, out = {};
+  for (const c of CATALOGO.PRODUTOS) {
+    if (manual[c.codigo] === '-') continue; // marcado como "sem vínculo"
+    const p = manual[c.codigo] ? porId.get(String(manual[c.codigo])) : porCod.get(c.codigo);
+    if (p) out[c.codigo] = { ...p, manual: !!manual[c.codigo] };
+  }
+  return out;
+}
+function fontesCatalogo() {
+  if (MERCOS.ativo()) {
+    const baixo = Number(process.env.CATALOGO_ESTOQUE_BAIXO) || 10;
+    return Object.entries(vinculosMercos()).filter(([, p]) => p.ativo).map(([codigo, p]) => ({ codigo, preco: p.preco, estoque: p.estoque, minimo: baixo, unidade: p.unidade }));
+  }
+  const codigos = new Set(CATALOGO.PRODUTOS.map(c => c.codigo));
+  return db.produtos.filter(p => p.ativo !== 'Não' && codigos.has(p.codigo))
+    .map(p => ({ codigo: p.codigo, preco: Number(p.preco) || 0, estoque: Number(p.estoque) || 0, minimo: Number(p.estoqueMin) || 0, unidade: p.unidade }));
+}
 rota('GET', '/api/catalogo', () => {
   const precos = process.env.CATALOGO_PRECOS !== 'nao', modoEst = ['situacao', 'nao'].includes(process.env.CATALOGO_ESTOQUE) ? process.env.CATALOGO_ESTOQUE : 'quantidade';
-  const codigos = new Set(CATALOGO.PRODUTOS.map(c => c.codigo));
-  const itens = db.produtos.filter(p => p.ativo !== 'Não' && codigos.has(p.codigo)).map(p => {
-    const est = Number(p.estoque) || 0;
-    return { codigo: p.codigo, unidade: p.unidade || 'UN', ...(precos && p.preco > 0 ? { preco: p.preco } : {}),
-      ...(modoEst === 'nao' ? {} : { situacao: est <= 0 ? 'Esgotado' : est <= (Number(p.estoqueMin) || 0) ? 'Últimas unidades' : 'Disponível' }),
-      ...(modoEst === 'quantidade' ? { estoque: Math.max(0, est) } : {}) };
+  const itens = fontesCatalogo().map(f => {
+    const temEst = f.estoque !== null && modoEst !== 'nao';
+    return { codigo: f.codigo, unidade: f.unidade || 'UN', ...(precos && f.preco > 0 ? { preco: f.preco } : {}),
+      ...(temEst ? { situacao: f.estoque <= 0 ? 'Esgotado' : f.estoque <= f.minimo ? 'Últimas unidades' : 'Disponível' } : {}),
+      ...(temEst && modoEst === 'quantidade' ? { estoque: Math.max(0, f.estoque) } : {}) };
   });
-  return { itens, empresa: db.empresa.fantasia || db.empresa.nome, atualizado: new Date().toISOString() };
+  const m = MERCOS.situacao();
+  return { itens, fonte: m.ativo ? 'mercos' : 'distribpro', empresa: db.empresa.fantasia || db.empresa.nome, atualizado: (m.ativo && m.ultimaSync) || new Date().toISOString() };
 }, { publica: true });
+/* ---- Mercos: situação da integração e vínculo dos itens do catálogo (administrador) ---- */
+rota('GET', '/api/mercos', (req, b, u) => {
+  exigir(u.papel === 'admin');
+  const v = vinculosMercos();
+  return { mercos: MERCOS.situacao(), produtos: MERCOS.produtos().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
+    catalogo: CATALOGO.PRODUTOS.map(c => ({ codigo: c.codigo, nome: c.nomeCompleto, mercosId: v[c.codigo] ? v[c.codigo].id : '', manual: (db.empresa.mercosVinculos || {})[c.codigo] || '' })) };
+});
+rota('PUT', '/api/mercos/vinculos', (req, b, u) => {
+  exigir(u.papel === 'admin'); exigir(b.vinculos && typeof b.vinculos === 'object', 'Vínculos inválidos', 400);
+  const codigos = new Set(CATALOGO.PRODUTOS.map(c => c.codigo)), novo = {};
+  for (const [k, val] of Object.entries(b.vinculos)) if (codigos.has(k) && val) novo[k] = String(val).slice(0, 40);
+  db.empresa.mercosVinculos = novo;
+}, { grava: true });
+rota('POST', '/api/mercos/sincronizar', async (req, b, u) => {
+  exigir(u.papel === 'admin'); exigir(MERCOS.ativo(), 'Integração com o Mercos não configurada (faltam os tokens).', 400);
+  await MERCOS.sincronizar(); const m = MERCOS.situacao(); exigir(!m.erro, m.erro, 502);
+  return { mercos: m };
+});
 rota('POST', '/api/catalogo/importar', (req, b, u) => {
   exigir(u.papel === 'admin');
   const existentes = new Set(db.produtos.map(p => p.codigo)); let n = 0;
@@ -681,6 +722,7 @@ for (const sinal of ['SIGTERM', 'SIGINT']) process.on(sinal, () => {
 });
 
 server.listen(PORT, () => {
+  MERCOS.iniciar();
   console.log(`\nDistribPro rodando em http://localhost:${PORT}`);
   console.log(`Banco: ${DB_FILE} · NF-e: ${NFE.provedor()}`);
   if (db.usuarios.some(x => x.email === 'admin@distribpro.local' && conferirSenha('admin123', x.senha))) console.log('Login inicial: admin@distribpro.local / admin123 (troque a senha!)\n');

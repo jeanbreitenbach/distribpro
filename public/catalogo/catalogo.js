@@ -49,7 +49,7 @@
       const r = await fetch('/api/catalogo', { cache: 'no-store' }); if (!r.ok) throw new Error();
       const j = await r.json(); precos = Object.fromEntries(j.itens.map(i => [i.codigo, i]));
       const h = new Date(j.atualizado).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      $('#status').textContent = j.itens.length ? `Preços e estoque atualizados às ${h}.` : `Preços e estoque sob consulta com o ${CONFIG.atendente}.`;
+      $('#status').textContent = j.itens.length ? `Preços e estoque${j.fonte === 'mercos' ? ' do Mercos' : ''} atualizados às ${h}.` : `Preços e estoque sob consulta com o ${CONFIG.atendente}.`;
     } catch { $('#status').textContent = `Não foi possível carregar preços e estoque agora. Consulte o ${CONFIG.atendente} pelo WhatsApp.`; }
     desenhar(); if ($('#janelaCarrinho').open) desenharCarrinho();
     const aberto = $('#janelaProduto').dataset.codigo; if ($('#janelaProduto').open && aberto) desenharProduto(aberto, true);

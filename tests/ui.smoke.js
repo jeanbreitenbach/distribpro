@@ -15,7 +15,7 @@ const PERFIS = [['admin@distribpro.local', 'admin123'], ['carlos@distribpro.loca
 const JANELAS = {
   admin: ["novoPedido()", "verPedido(db.pedidos[0].id)", "verCliente(db.clientes[0].id)", "editar('produtos', db.produtos[0].id)", "editar('clientes')", "editar('usuarios', db.usuarios[1].id)",
     "lancMov()", "novaConta()", "verConta(db.pagar[0].id)", "pagarConta(db.pagar.find(t=>!t.pago).id)", "novaCompra()", "sugerirCompra()", "verCompra(db.compras[0].id)", "verFornecedor(db.fornecedores[0].id)",
-    "editar('bancos')", "abrirConciliacao(db.extrato[0].id)", "agendarVisita()", "gerarRoteiro()", "editar('tabelas', db.tabelas[0].id)"],
+    "editar('bancos')", "abrirConciliacao(db.extrato[0].id)", "agendarVisita()", "gerarRoteiro()", "editar('tabelas', db.tabelas[0].id)", "telaMercos()"],
   vendedor: ["novoPedido()", "verPedido(db.pedidos[0].id)", "verCliente(db.clientes[0].id)", "editar('clientes', db.clientes[0].id)", "editar('produtos', db.produtos[0].id)", "agendarVisita()", "gerarRoteiro()"],
   cliente: ["novoPedido()", "verPedido(db.pedidos[0].id)", "duplicarPedido(db.pedidos[0].id)"],
 };

@@ -431,13 +431,44 @@ function cartFinalizar() {
 }
 
 /* ---------- Cadastros ---------- */
+/** Integração com o Mercos: situação e vínculo de cada item do catálogo com um produto do Mercos. */
+async function telaMercos() {
+  let r; try { r = await api('GET', '/api/mercos'); } catch (e) { return alert(e.message); }
+  const m = r.mercos;
+  if (!m.ativo) return openModal(`<h2>Integração com o Mercos</h2>
+    <p>O catálogo público está usando <b>preço e estoque do DistribPro</b>. Para usar os do Mercos, configure no servidor (no Render: <i>Environment</i>):</p>
+    <ul><li><code>MERCOS_APPLICATION_TOKEN</code>: token da aplicação, fornecido pelo Mercos ao liberar a integração por API;</li>
+    <li><code>MERCOS_COMPANY_TOKEN</code>: token da sua empresa no Mercos;</li>
+    <li><code>MERCOS_TABELA_ID</code> (opcional): tabela de preço do Mercos usada no catálogo.</li></ul>
+    <p class="hint">Peça os tokens ao suporte do Mercos (integração via API). Depois de reiniciar o servidor, volte aqui para conferir o vínculo dos produtos.</p>
+    <div class="actions"><span style="flex:1"></span><button class="btn" onclick="closeModal()">Fechar</button></div>`);
+  const opc = r.produtos.map(p => [p.id, `${p.codigo ? p.codigo + ' — ' : ''}${p.nome} · ${brl(p.preco)}${p.estoque === null ? '' : ' · est. ' + num(p.estoque)}${p.ativo ? '' : ' (inativo)'}`]);
+  const linhas = r.catalogo.map(c => `<tr><td><b>${esc(c.nome)}</b><br><span class="muted">${esc(c.codigo)}</span></td><td>
+    <select name="${esc(c.codigo)}" style="width:100%"><option value="">${c.mercosId && !c.manual ? 'Automático (mesmo código) ✓' : 'Automático (mesmo código): não encontrado'}</option><option value="-" ${c.manual === '-' ? 'selected' : ''}>Sem vínculo (preço sob consulta)</option>
+    ${opc.map(([id, t]) => `<option value="${esc(id)}" ${c.manual === id ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></td></tr>`).join('');
+  const vinc = r.catalogo.filter(c => c.mercosId).length;
+  openModal(`<h2>Integração com o Mercos</h2>
+    <p>${m.erro ? `<span class="badge b-bad">Erro</span> ${esc(m.erro)}` : `<span class="badge b-ok">Conectado</span> ${m.produtos} produtos lidos`}
+      ${m.ultimaSync ? ` · última leitura ${new Date(m.ultimaSync).toLocaleString('pt-BR')}` : ''}${m.tabela ? ` · tabela de preço ${m.tabela}` : ' · preço de tabela do produto'}</p>
+    <p class="hint">${vinc} de ${r.catalogo.length} itens do catálogo ligados a um produto do Mercos. O vínculo automático usa o mesmo código; escolha o produto nos que não forem encontrados.</p>
+    <form id="frmMercos" onsubmit="event.preventDefault()"><div class="tbl-wrap"><table><thead><tr><th>Item do catálogo</th><th>Produto no Mercos</th></tr></thead><tbody>${linhas}</tbody></table></div></form>
+    <div class="actions"><button class="btn" onclick="sincronizarMercos()">↻ Ler o Mercos agora</button><span style="flex:1"></span><button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn pri" onclick="salvarVinculosMercos()">Salvar vínculos</button></div>`, true);
+}
+async function salvarVinculosMercos() {
+  const vinculos = Object.fromEntries(new FormData($('#frmMercos')));
+  if (await acao(() => api('PUT', '/api/mercos/vinculos', { vinculos }), 'Vínculos salvos')) telaMercos();
+}
+async function sincronizarMercos() {
+  if (await acao(() => api('POST', '/api/mercos/sincronizar'), 'Produtos do Mercos atualizados')) telaMercos();
+}
 async function importarCatalogo() {
   if (!confirm('Cadastrar os produtos do catálogo (/catalogo) que ainda não existem? Eles entram com preço e estoque zerados, para você completar. O catálogo mostra preço e estoque dos produtos com o mesmo código.')) return;
   const r = await acao(() => api('POST', '/api/catalogo/importar'));
   if (r) toast(r.criados ? `${r.criados} produto(s) do catálogo cadastrados. Preencha preço, estoque e NCM.` : 'Todos os itens do catálogo já estão cadastrados.');
 }
 VIEWS.produtos = () => {
-  if (isAdmin()) setActions(`<a class="btn" href="/catalogo" target="_blank" rel="noopener">🛒 Ver catálogo</a><button class="btn" onclick="importarCatalogo()">Cadastrar itens do catálogo</button><button class="btn" onclick="exportCSV('produtos')">Exportar CSV</button><button class="btn pri" onclick="editar('produtos')">+ Novo produto</button>`);
+  if (isAdmin()) setActions(`<a class="btn" href="/catalogo" target="_blank" rel="noopener">🛒 Ver catálogo</a><button class="btn" onclick="importarCatalogo()">Cadastrar itens do catálogo</button><button class="btn" onclick="telaMercos()">🔗 Mercos</button><button class="btn" onclick="exportCSV('produtos')">Exportar CSV</button><button class="btn pri" onclick="editar('produtos')">+ Novo produto</button>`);
   else setActions(`<a class="btn" href="/catalogo" target="_blank" rel="noopener">🛒 Ver catálogo</a>`);
   const s = state; const cats = [...new Set(db.produtos.map(p => p.categoria))];
   const rows = db.produtos.filter(p => match(s.q, p.nome, p.codigo, p.marca, p.ean) && (!s.cat || p.categoria === s.cat) && (!s.baixo || p.estoque <= p.estoqueMin)).map(p => ({ ...p, _click: `editar('produtos','${p.id}')` }));

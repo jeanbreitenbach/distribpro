@@ -1,0 +1,13 @@
+{
+  "name": "repcrm",
+  "version": "1.0.0",
+  "description": "CRM para representante comercial: clientes, representadas, funil, agenda, pedidos e comissões",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests/api.test.js"
+  },
+  "engines": { "node": ">=22.13" },
+  "license": "UNLICENSED",
+  "private": true
+}

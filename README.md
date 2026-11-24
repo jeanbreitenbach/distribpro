@@ -2,6 +2,8 @@
 
 Sistema web multiusuário para distribuidoras, no estilo Demander: pedidos, força de vendas externa, portal B2B do cliente, estoque, contas a receber, relatórios e NF-e.
 
+> 💼 **É representante comercial?** Veja também o **RepCRM** na pasta [`representante/`](representante/README.md), um CRM com representadas, funil, agenda, pedidos e controle de comissões.
+
 **Sem dependências:** só precisa do Node.js 22.13 ou superior. O banco de dados (SQLite) já vem embutido no Node.
 
 ## Como rodar

@@ -1164,10 +1164,11 @@ VIEWS.clientes = () => {
     <select onchange="state.st=this.value;render()"><option value="">Todas as situações</option>${R.STATUS_CLIENTE.map(x => `<option ${x === s.st ? 'selected' : ''}>${x}</option>`).join('')}</select><span class="hint" style="align-self:center">${l.length} cliente(s)</span></div>
   ${tabela(['Cliente', 'Cidade', 'Contato', 'Situação', 'Último pedido', 'Vendido 12 meses', ''], l.map(c => {
     const u = ultimoPedido(c.id), v = vendasValidas().filter(p => p.clienteId === c.id && p.data >= ano).reduce((t, p) => t + R.valorVenda(p), 0);
-    return `<tr><td><a class="lnk" onclick="fichaCliente('${c.id}')"><b>${esc(c.fantasia || c.razao)}</b></a><div class="hint">${esc(c.razao)}${c.segmento ? ' · ' + esc(c.segmento) : ''}</div></td>
+    return `<tr class="clic" onclick="fichaCliente('${c.id}')"><td><div class="row gap4" style="justify-content:space-between;align-items:flex-start"><div style="min-width:0"><a class="lnk"><b>${esc(c.fantasia || c.razao)}</b></a><div class="hint">${esc(c.razao)}${c.segmento ? ' · ' + esc(c.segmento) : ''}</div></div>
+      <button class="btn sm" title="Editar cliente" onclick="event.stopPropagation();editar('clientes','${c.id}')">✏️ Editar</button></div></td>
       <td>${esc(c.cidade)}${c.uf ? '/' + esc(c.uf) : ''}</td><td>${esc(c.contato)}<div class="hint">${esc(c.whatsapp || c.telefone)}</div></td>
       <td><span class="badge ${{ Ativo: 'b-ok', Prospect: '', Inativo: 'b-mut' }[c.status]}">${esc(c.status)}</span></td><td>${u ? fdate(u) + `<div class="hint">há ${R.diasEntre(u, hoje())} dias</div>` : '<span class="muted">—</span>'}</td>
-      <td class="num">${brl(v)}</td><td>${c.whatsapp ? `<a class="btn sm" target="_blank" rel="noopener" href="${zap(c.whatsapp)}">💬</a>` : ''}</td></tr>`; }), 'Nenhum cliente encontrado.')}`;
+      <td class="num">${brl(v)}</td><td>${c.whatsapp ? `<a class="btn sm" target="_blank" rel="noopener" href="${zap(c.whatsapp)}" onclick="event.stopPropagation()">💬</a>` : ''}</td></tr>`; }), 'Nenhum cliente encontrado.')}`;
 };
 function exportarClientes() {
   csv('clientes.csv', ['Razão social', 'Fantasia', 'CNPJ', 'Situação', 'Segmento', 'Contato', 'Telefone', 'WhatsApp', 'E-mail', 'Cidade', 'UF', 'Último pedido'],
@@ -1186,7 +1187,7 @@ function fichaCliente(id) {
     ].sort((a, b) => b.d.localeCompare(a.d));
     const end = [c.logradouro, c.numero, c.bairro, c.cidade && c.cidade + (c.uf ? '/' + c.uf : ''), c.cep].filter(Boolean).join(', ');
     openModal(`<div class="row wrap" style="justify-content:space-between"><h2 style="margin:0">${esc(c.fantasia || c.razao)} <span class="badge ${{ Ativo: 'b-ok', Prospect: '', Inativo: 'b-mut' }[c.status]}">${c.status}</span></h2>
-        <div class="row gap4"><button class="btn sm" onclick="editar('clientes','${id}',{},fichaCliente)">✏️ Editar</button><button class="btn sm" onclick="closeModal()">✕</button></div></div>
+        <div class="row gap4"><button class="btn sm pri" onclick="editar('clientes','${id}',{},fichaCliente)">✏️ Editar cliente</button><button class="btn sm" onclick="closeModal()">✕</button></div></div>
       <p class="muted" style="margin:4px 0 10px">${esc(c.razao)}${c.cnpj ? ' · CNPJ ' + esc(c.cnpj) : ''}${c.segmento ? ' · ' + esc(c.segmento) : ''}</p>
       <div class="grid half"><div><div><b>${esc(c.contato || '—')}</b> ${c.cargo ? `<span class="muted">(${esc(c.cargo)})</span>` : ''}</div>
         ${end ? `<div class="hint">📍 <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(end)}">${esc(end)}</a></div>` : ''}

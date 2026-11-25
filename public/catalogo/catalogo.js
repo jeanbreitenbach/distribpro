@@ -122,7 +122,7 @@
         ${botoesPacote(p, 'card')}
         ${p.detalhe ? `<span class="detalhe">${esc(p.detalhe)}</span>` : ''}
         <div class="meta"><span>${esc(p.marca)}</span>${p.unidadePeso ? `<span class="peso" title="Peso de cada unidade">${esc(p.unidadePeso)}</span>` : ''}</div>
-        <div class="preco-linha">${blocoPreco(p)}${seloEstoque(pr)}</div>
+        <div class="preco-linha"><button type="button" class="ver-preco" data-abrir="${p.codigo}">Ver preço e detalhes ›</button>${seloEstoque(pr)}</div>
         <div class="card-acoes">
           ${seletor(p.codigo, 1, 'card')}
           <button type="button" class="btn pri" data-add="${p.codigo}" ${esgotado ? 'title="Sem estoque no momento: o atendente confirma a previsão"' : ''}>Adicionar</button>

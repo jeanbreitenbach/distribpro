@@ -68,6 +68,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .preco{white-space:nowrap;font-size:19px;font-weight:800;color:var(--texto)}
 .por-kg{font-size:12px;color:var(--suave);margin-top:-2px}
 .preco small{font-size:12px;font-weight:500;color:var(--suave)}
+.ver-preco{background:none;border:0;padding:0;font:inherit;font-size:14px;font-weight:700;color:var(--verm);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .consulta{font-size:13px;color:var(--suave);font-weight:600}
 .est{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
 .est.ok{background:var(--ok-suave);color:var(--ok)}.est.pouco{background:var(--alerta-suave);color:var(--alerta)}.est.fim{background:var(--ruim-suave);color:var(--ruim)}

@@ -12,6 +12,12 @@ Ela tem duas **carteiras separadas, Mayrink e TRAC**, que se troca no topo da te
 
 Essa versão é montada a partir deste mesmo código por `python3 artifact/build.py`, que gera `artifact/repcrm.html`. Nela, o pedido impresso é baixado como arquivo para abrir e imprimir, e não há usuários e senhas, porque o acesso é o da conta Claude (para dar acesso a uma assistente, use *Compartilhar* na página).
 
+## App para Android (APK)
+
+`android/RepCRM.apk` instala o RepCRM no celular com ícone próprio. O app abre a versão online numa tela cheia do Chrome, usando o login do Claude que já está no Chrome. Seus dados continuam na conta Claude.
+
+Para instalar: baixe o arquivo no celular, abra-o e permita *instalar apps desta fonte* quando o Android pedir. Para gerar de novo: `ANDROID_HOME=/caminho/do/sdk android/build.sh` (os ícones vêm de `node android/icones.js`).
+
 ## Como rodar
 
 ```bash

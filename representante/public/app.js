@@ -184,6 +184,7 @@ const mesAtual = () => hoje().slice(0, 7);
 const faturadoNoMes = (m, repId) => vendasValidas().filter(p => (p.dataFaturamento || '').startsWith(m) && (!repId || p.representadaId === repId)).reduce((s, p) => s + R.valorVenda(p), 0);
 function graficoBarras(serie, fmt = brl) {
   // serie: [{rotulo, valor, dica}] — uma série só, então sem legenda; o título do cartão nomeia o que é.
+  if (!serie.some(s => s.valor > 0)) return '<p class="muted">Ainda não há pedidos faturados para mostrar.</p>';
   const W = 640, H = 200, pl = 58, pb = 22, pt = 10, max = Math.max(1, ...serie.map(s => s.valor));
   const passo = (W - pl - 4) / serie.length, bw = Math.min(34, passo * 0.62);
   const ticks = [0, 0.5, 1].map(f => f * max);
@@ -687,7 +688,7 @@ function importarProdutos() {
   $('#iArq').onchange = async e => {
     const f = e.target.files[0]; if (!f) return;
     const buf = await f.arrayBuffer(); let txt = new TextDecoder('utf-8').decode(buf);
-    if (txt.includes('�')) txt = new TextDecoder('windows-1252').decode(buf); // planilhas do Excel em português costumam vir em Latin-1
+    if (txt.includes('\ufffd')) txt = new TextDecoder('windows-1252').decode(buf); // planilhas do Excel em português costumam vir em Latin-1
     const ls = lerCSV(txt.replace(/^﻿/, '')); if (ls.length < 2) return $('#iPrev').innerHTML = '<p class="err">Arquivo vazio ou sem linhas de dados.</p>';
     const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
     const cab = ls[0].map(norm);

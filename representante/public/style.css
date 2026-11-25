@@ -1,11 +1,11 @@
 :root{
   --bg:#f4f6fa;--panel:#fff;--panel2:#f9fafc;--text:#1b2230;--muted:#6b7385;--line:#e3e7ee;
-  --pri:#0f766e;--pri2:#0b5f59;--pri-soft:#e0f2f0;--ok:#1d8a52;--ok-soft:#e3f5ec;--warn:#b7791f;--warn-soft:#fdf3e1;
+  --pri:#0f766e;--pri2:#0b5f59;--pri-soft:#e0f2f0;--on-pri:#fff;--ok:#1d8a52;--ok-soft:#e3f5ec;--warn:#b7791f;--warn-soft:#fdf3e1;
   --bad:#c53030;--bad-soft:#fde8e8;--side:#0f172a;--side-text:#c9d1e3;--shadow:0 1px 3px rgba(16,24,40,.08);
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#0e131d;--panel:#161d2b;--panel2:#1b2333;--text:#e6eaf2;--muted:#8d97ab;--line:#2a3346;
-  --pri:#2dd4bf;--pri2:#14b8a6;--pri-soft:#123634;--ok:#4cc58a;--ok-soft:#15322a;--warn:#e3b25a;--warn-soft:#3a2e17;
+  --pri:#2dd4bf;--pri2:#14b8a6;--pri-soft:#123634;--on-pri:#042f2c;--ok:#4cc58a;--ok-soft:#15322a;--warn:#e3b25a;--warn-soft:#3a2e17;
   --bad:#f07171;--bad-soft:#3d1d22;--side:#0a0f18;--side-text:#aab4c8;--shadow:none;}}
 *{box-sizing:border-box}
 body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
@@ -16,7 +16,7 @@ aside{width:230px;background:var(--side);color:var(--side-text);flex-shrink:0;po
 .brand span{background:var(--pri);border-radius:8px;width:30px;height:30px;display:grid;place-items:center}
 nav a{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:8px;color:var(--side-text);text-decoration:none;margin-bottom:2px;cursor:pointer}
 nav a:hover{background:rgba(255,255,255,.06)}
-nav a.active{background:var(--pri);color:#fff}
+nav a.active{background:var(--pri);color:var(--on-pri)}
 nav .sep{font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.5;padding:14px 12px 6px}
 main{flex:1;min-width:0;padding:22px 26px 60px}
 .top{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
@@ -24,7 +24,7 @@ main{flex:1;min-width:0;padding:22px 26px 60px}
 .top .menu-btn{display:none}
 .btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit;display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
 .btn:hover{border-color:var(--pri)}
-.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+.btn.pri{background:var(--pri);border-color:var(--pri);color:var(--on-pri)}
 .btn.pri:hover{background:var(--pri2)}
 .btn.sm{padding:4px 9px;font-size:12px}
 .btn.danger{color:var(--bad)}
@@ -88,7 +88,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
 .login-wrap{min-height:100vh;display:grid;place-items:center;padding:16px;background:var(--side)}
 .login{width:100%;max-width:380px}
 .login .brand{color:var(--text);padding:0 0 18px}
-.login .brand span{color:#fff}
+.login .brand span{color:var(--on-pri)}
 .user-box{border-top:1px solid rgba(255,255,255,.08);margin-top:14px;padding:12px;font-size:12px}
 .user-box b{color:#fff;display:block;font-size:13px}
 .ro input,.ro select{background:var(--panel2)}
@@ -98,7 +98,7 @@ label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
 
 /* ---- RepCRM ---- */
 body{background:var(--bg)}
-.brand span{color:#fff}
+.brand span{color:var(--on-pri)}
 nav .cnt{margin-left:auto;font-style:normal;background:var(--bad);color:#fff;border-radius:99px;font-size:11px;padding:1px 7px}
 .lnk{cursor:pointer;color:var(--pri);text-decoration:none}.lnk:hover{text-decoration:underline}
 .user-box .lnk{color:var(--side-text);text-decoration:underline}

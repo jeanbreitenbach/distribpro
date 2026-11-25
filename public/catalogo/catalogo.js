@@ -288,6 +288,11 @@
   document.title = CONFIG.titulo;
   $('#whatsFlutuante').href = linkWhats(`${saudacao()} Vim pelo catálogo e gostaria de atendimento.`);
   $('#whatsFlutuanteTxt').textContent = `Falar com o ${CONFIG.atendente}`;
+  if (CONFIG.empresa) {
+    $('#marcaNome').textContent = CONFIG.empresa;
+    const tel = CONFIG.whatsapp.replace(/^55(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+    $('#rodapeEmpresa').innerHTML = `<b>${esc(CONFIG.empresa)}</b> · Atendimento: ${esc(CONFIG.atendente)} · WhatsApp <span class="tel">${esc(tel)}</span>`;
+  }
   desenharSecoes(); desenhar(); salvarCarrinho();
   if (porCodigo[codigoDoHash()]) abrirProduto(codigoDoHash());
   carregarPrecos(); setInterval(() => { if (!document.hidden) carregarPrecos(); }, 60e3);

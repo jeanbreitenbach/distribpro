@@ -905,8 +905,25 @@ function editar(col, id, padrao = {}, depois) {
 }
 /* ---------- Cadastro pelo CNPJ (dados da Receita) ---------- */
 const barraCNPJ = o => `<div class="cnpj-bar"><label for="cbCnpj">${o.id ? 'Atualizar com os dados da Receita' : 'Cadastrar pelo CNPJ: digite e busque os dados da empresa na Receita'}</label>
-  <div class="row wrap gap4"><input id="cbCnpj" inputmode="numeric" autocomplete="off" placeholder="00.000.000/0000-00" value="${esc(o.cnpj || '')}" style="flex:1;min-width:180px" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarCNPJ()}">
+  <div class="row wrap gap4"><input id="cbCnpj" inputmode="numeric" autocomplete="off" placeholder="00.000.000/0000-00" value="${esc(o.cnpj || '')}" style="flex:1;min-width:180px" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarCNPJ()}" oninput="cnpjDigitado(this)">
   <button class="btn" type="button" onclick="buscarCNPJ()">🔎 Buscar dados</button></div><div id="cbMsg" class="hint" style="margin-top:6px"></div><div id="cbCola"></div></div>`;
+/** Ao completar os 14 dígitos, busca sozinho (sem precisar clicar). Colar o texto da consulta aqui também funciona. */
+function cnpjDigitado(el) {
+  const d = R.digitos(el.value);
+  if (el.value.length > 40 && R.lerConsultaCNPJ(el.value)) { const e = R.lerConsultaCNPJ(el.value); el.value = e.cnpj; $('#cbCola').innerHTML = ''; return preencherCliente(e); }
+  if (d.length === 14 && d !== el.dataset.ultimo) { el.dataset.ultimo = d; buscarCNPJ(); }
+  else if (d.length < 14) { el.dataset.ultimo = ''; $('#cbMsg').innerHTML = ''; $('#cbCola').innerHTML = ''; }
+}
+// Ao voltar da aba da consulta, o campo de colar já fica selecionado; e Ctrl+V em qualquer ponto do formulário preenche os dados
+window.addEventListener('focus', () => { const c = $('#cbTxt'); if (c && !c.value) c.focus(); });
+document.addEventListener('paste', ev => {
+  const caixa = $('#cbCola'); if (!caixa || !caixa.innerHTML) return;
+  const alvo = ev.target, emCampo = alvo && /^(INPUT|TEXTAREA|SELECT)$/.test(alvo.tagName) && !['cbTxt', 'cbCnpj'].includes(alvo.id);
+  if (emCampo) return; // colando num campo comum: deixa o navegador colar normalmente
+  const txt = ev.clipboardData && ev.clipboardData.getData('text'); if (!txt) return;
+  const t = $('#cbTxt'); if (!t) return;
+  ev.preventDefault(); t.value = txt; t.oninput();
+}, true);
 async function buscarCNPJ() {
   const d = R.digitos($('#cbCnpj').value), msg = $('#cbMsg'), id = $('#frm').dataset.id;
   $('#cbCola').innerHTML = '';
@@ -921,9 +938,9 @@ async function buscarCNPJ() {
 }
 function colarConsulta(d) {
   $('#cbCola').innerHTML = `<ol class="passos">
-    <li><a class="btn sm pri" href="https://brasilapi.com.br/api/cnpj/v1/${d}" target="_blank" rel="noopener">Abrir a consulta do CNPJ ↗</a> <span class="hint">abre numa nova aba</span></li>
+    <li><a class="btn pri" id="cbAbrir" href="https://brasilapi.com.br/api/cnpj/v1/${d}" target="_blank" rel="noopener">🔎 Abrir a consulta da Receita ↗</a> <span class="hint">abre numa nova aba</span></li>
     <li>Na página que abrir, selecione tudo e copie: <b>Ctrl+A</b> e <b>Ctrl+C</b> (no celular: toque e segure → <i>Selecionar tudo</i> → <i>Copiar</i>).</li>
-    <li>Volte aqui e cole abaixo (<b>Ctrl+V</b>). Os campos se preenchem sozinhos.</li></ol>
+    <li>Volte aqui e aperte <b>Ctrl+V</b> (no celular, cole na caixa abaixo). Os campos se preenchem sozinhos.</li></ol>
     <textarea id="cbTxt" rows="2" placeholder="Cole aqui o que você copiou"></textarea>`;
   $('#cbTxt').oninput = () => {
     const t = $('#cbTxt').value, e = R.lerConsultaCNPJ(t);

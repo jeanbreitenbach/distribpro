@@ -89,10 +89,20 @@
       .map(([id, nome]) => `<button type="button" data-secao="${id}" aria-pressed="${filtro.secao === id}">${esc(nome)}</button>`).join('');
   }
   const normal = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  // Produtos com vários tamanhos (mesmo "grupo"): um card só, com a escolha do pacote
+  const escolha = {}; // grupo -> código escolhido
+  const variantes = p => (p.grupo ? PRODUTOS.filter(x => x.grupo === p.grupo) : [p]);
+  const escolhido = p => (p.grupo && porCodigo[escolha[p.grupo]]) || p;
+  const botoesPacote = (p, onde) => {
+    const vs = variantes(p); if (vs.length < 2) return '';
+    return `<div class="pacotes" role="group" aria-label="Tamanho do pacote">${vs.map(v => `<button type="button" data-pacote="${v.codigo}" data-local="${onde}" aria-pressed="${v.codigo === p.codigo}">${esc(v.embalagem)}</button>`).join('')}</div>`;
+  };
   function desenhar() {
     const q = normal(filtro.q);
     const html = SECOES.filter(s => !filtro.secao || s.id === filtro.secao).map(s => {
-      const itens = PRODUTOS.filter(p => p.secao === s.id && (!q || normal(`${p.nome} ${p.detalhe} ${p.marca} ${p.embalagem} ${p.codigo}`).includes(q)));
+      const vistos = new Set();
+      const itens = PRODUTOS.filter(p => p.secao === s.id && (!q || normal(`${p.nome} ${p.detalhe} ${p.marca} ${p.embalagem} ${p.codigo}`).includes(q)))
+        .filter(p => !p.grupo || (!vistos.has(p.grupo) && vistos.add(p.grupo))).map(escolhido);
       if (!itens.length) return '';
       return `<section class="secao ${s.id === 'tiatania' ? 'ouro' : ''}" id="sec-${s.id}"><h2>${esc(s.nome)}</h2><div class="grade">${itens.map(cartao).join('')}</div></section>`;
     }).join('');
@@ -108,6 +118,7 @@
       </button>
       <div class="card-corpo">
         <h3>${esc(p.nome)}</h3>
+        ${botoesPacote(p, 'card')}
         ${p.detalhe ? `<span class="detalhe">${esc(p.detalhe)}</span>` : ''}
         <div class="meta"><span>${esc(p.marca)}</span><span class="peso" title="Peso de cada unidade">${esc(p.unidadePeso)}</span></div>
         <div class="preco-linha">${blocoPreco(p)}${seloEstoque(pr)}</div>
@@ -145,6 +156,7 @@
           ${p.foto ? `<img class="foto-pronto" src="${imagem(p.foto)}" alt="${esc(p.nome)} pronto para servir" width="560" height="560">` : ''}</div>
         <div class="j-info">
           ${p.detalhe ? `<span class="detalhe">${esc(p.detalhe)}</span>` : ''}
+          ${botoesPacote(p, 'janela')}
           <div class="fatos">
             <span class="fato"><b>Marca</b>${esc(p.marca)}</span><span class="fato"><b>Embalagem</b>${esc(p.embalagem)}</span>
             <span class="fato"><b>Cada unidade</b>${esc(p.unidadePeso)}</span><span class="fato"><b>Código</b>${esc(p.codigo)}</span>
@@ -166,6 +178,7 @@
   }
   function abrirProduto(codigo) {
     if (!porCodigo[codigo]) return;
+    if (porCodigo[codigo].grupo) escolha[porCodigo[codigo].grupo] = codigo; // o card acompanha o pacote aberto
     desenharProduto(codigo); atualizarLinks(); const j = $('#janelaProduto');
     if (!j.open) j.showModal(); j.scrollTop = 0;
     if (location.hash !== '#' + codigo) history.replaceState(null, '', '#' + codigo); // link direto para o produto
@@ -244,6 +257,11 @@
     const t = e.target.closest('button,a'); if (!t) return;
     if (t.dataset.secao !== undefined) { filtro.secao = t.dataset.secao; desenharSecoes(); desenhar(); window.scrollTo({ top: 0 }); return; }
     if (t.dataset.abrir) return abrirProduto(t.dataset.abrir);
+    if (t.dataset.pacote) { // troca o tamanho do pacote no card ou na janela
+      const v = porCodigo[t.dataset.pacote]; escolha[v.grupo] = v.codigo; desenhar();
+      if (t.dataset.local === 'janela') abrirProduto(v.codigo);
+      return;
+    }
     if (t.dataset.passo) {
       const box = t.closest('.qtd'), inp = box.querySelector('input'); const v = Math.max(box.dataset.onde === 'carrinho' ? 0 : 1, (Number(inp.value) || 0) + Number(t.dataset.passo));
       inp.value = v; if (box.dataset.onde === 'carrinho') mudarNoCarrinho(box.dataset.qtdDe, v); else atualizarLinks(); return;

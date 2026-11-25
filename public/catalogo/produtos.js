@@ -814,7 +814,7 @@ window.CATALOGO = {
    }
   },
   {
-   "codigo": "319",
+   "codigo": "106",
    "nome": "Bacon Manta sem Pele (Barriga)",
    "marca": "Sulblime",
    "embalagem": "Peça",

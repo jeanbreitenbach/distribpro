@@ -358,6 +358,120 @@ window.CATALOGO = {
    }
   },
   {
+   "codigo": "374",
+   "nome": "Queijo Mussarela Fatiada P2",
+   "marca": "Kase Haus",
+   "embalagem": "Peça fatiada",
+   "categoria": "Queijos",
+   "preco": 37.99,
+   "unidade": "KG",
+   "estoque": null,
+   "imagem": null,
+   "nutricao": {
+    "kcal": 330,
+    "carboidratos": 3.0,
+    "proteinas": 22.6,
+    "gordurasTotais": 25.2,
+    "gordurasSaturadas": 15.0,
+    "sodio": 580
+   }
+  },
+  {
+   "codigo": "369",
+   "nome": "Queijo Mussarela Fatiada P4",
+   "marca": "Edulat",
+   "embalagem": "Peça fatiada",
+   "categoria": "Queijos",
+   "preco": 36.0,
+   "unidade": "KG",
+   "estoque": null,
+   "imagem": null,
+   "nutricao": {
+    "kcal": 330,
+    "carboidratos": 3.0,
+    "proteinas": 22.6,
+    "gordurasTotais": 25.2,
+    "gordurasSaturadas": 15.0,
+    "sodio": 580
+   }
+  },
+  {
+   "codigo": "375",
+   "nome": "Queijo Mussarela Fatiada P4",
+   "marca": "Kase Haus",
+   "embalagem": "Peça fatiada",
+   "categoria": "Queijos",
+   "preco": 37.99,
+   "unidade": "KG",
+   "estoque": null,
+   "imagem": null,
+   "nutricao": {
+    "kcal": 330,
+    "carboidratos": 3.0,
+    "proteinas": 22.6,
+    "gordurasTotais": 25.2,
+    "gordurasSaturadas": 15.0,
+    "sodio": 580
+   }
+  },
+  {
+   "codigo": "373",
+   "nome": "Queijo Mussarela Inteira P4",
+   "marca": "Kase Haus",
+   "embalagem": "Peça",
+   "categoria": "Queijos",
+   "preco": 34.06,
+   "unidade": "KG",
+   "estoque": null,
+   "imagem": null,
+   "nutricao": {
+    "kcal": 330,
+    "carboidratos": 3.0,
+    "proteinas": 22.6,
+    "gordurasTotais": 25.2,
+    "gordurasSaturadas": 15.0,
+    "sodio": 580
+   }
+  },
+  {
+   "codigo": "92",
+   "nome": "Queijo Prato Fatiado P2",
+   "marca": "Emybel",
+   "embalagem": "Peça fatiada",
+   "categoria": "Queijos",
+   "preco": 44.54,
+   "unidade": "KG",
+   "estoque": null,
+   "imagem": null,
+   "nutricao": {
+    "kcal": 360,
+    "carboidratos": 1.9,
+    "proteinas": 22.7,
+    "gordurasTotais": 29.1,
+    "gordurasSaturadas": 17.0,
+    "sodio": 580
+   }
+  },
+  {
+   "codigo": "378",
+   "nome": "Queijo Provolone 2 kg",
+   "marca": "Kase Haus",
+   "embalagem": "Peça 2 kg",
+   "categoria": "Queijos",
+   "preco": 45.72,
+   "unidade": "KG",
+   "estoque": null,
+   "imagem": null,
+   "nutricao": {
+    "kcal": 352,
+    "carboidratos": 2.1,
+    "proteinas": 25.6,
+    "gordurasTotais": 26.6,
+    "gordurasSaturadas": 17.1,
+    "sodio": 876
+   }
+  },
+  {
    "codigo": "178",
    "nome": "Cheddar Cremoso Bisnaga 1,010 kg",
    "marca": "Alcremo",
@@ -564,6 +678,44 @@ window.CATALOGO = {
     "gordurasTotais": 16.0,
     "gordurasSaturadas": 9.0,
     "sodio": 650
+   }
+  },
+  {
+   "codigo": "376",
+   "nome": "Manteiga em Bloco sem Sal 5 kg",
+   "marca": "Kase Haus",
+   "embalagem": "Bloco 5 kg",
+   "categoria": "Laticínios & Cremosos",
+   "preco": 30.13,
+   "unidade": "KG",
+   "estoque": null,
+   "imagem": null,
+   "nutricao": {
+    "kcal": 758,
+    "carboidratos": 0.0,
+    "proteinas": 0.4,
+    "gordurasTotais": 86.0,
+    "gordurasSaturadas": 48.0,
+    "sodio": 4
+   }
+  },
+  {
+   "codigo": "377",
+   "nome": "Nata 3,5 kg",
+   "marca": "Kase Haus",
+   "embalagem": "Balde 3,5 kg",
+   "categoria": "Laticínios & Cremosos",
+   "preco": 64.19,
+   "unidade": "UN",
+   "estoque": null,
+   "imagem": null,
+   "nutricao": {
+    "kcal": 340,
+    "carboidratos": 3.0,
+    "proteinas": 2.5,
+    "gordurasTotais": 35.0,
+    "gordurasSaturadas": 22.0,
+    "sodio": 40
    }
   },
   {
@@ -1039,6 +1191,25 @@ window.CATALOGO = {
     "gordurasTotais": 30.6,
     "gordurasSaturadas": 11.0,
     "sodio": 1574
+   }
+  },
+  {
+   "codigo": "62",
+   "nome": "Bacon Manta Barriga",
+   "marca": "Rothenburg (RTB)",
+   "embalagem": "Peça",
+   "categoria": "Frios & Embutidos",
+   "preco": 35.24,
+   "unidade": "KG",
+   "estoque": null,
+   "imagem": null,
+   "nutricao": {
+    "kcal": 400,
+    "carboidratos": 0.5,
+    "proteinas": 13.0,
+    "gordurasTotais": 39.0,
+    "gordurasSaturadas": 14.0,
+    "sodio": 1200
    }
   },
   {

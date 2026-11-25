@@ -11,7 +11,7 @@ let PORTA, srv, fake, erros = '';
 const chamadas = { produtos: 0, tokensErrados: 0, limitado: false };
 
 const PRODUTOS = [
-  { id: 1, codigo: 'IP-TRAD-2KG', nome: 'PAO DE QUEIJO TRAD 2KG', preco_tabela: 50, saldo_estoque: 5, unidade: 'PCT', ativo: true, excluido: false, ultima_alteracao: '2026-01-01 10:00:00' },
+  { id: 1, codigo: 'IP-TRAD-800', nome: 'PAO DE QUEIJO TRAD 2KG', preco_tabela: 50, saldo_estoque: 5, unidade: 'PCT', ativo: true, excluido: false, ultima_alteracao: '2026-01-01 10:00:00' },
   { id: 2, codigo: 'X99', nome: 'PAO QUEIJO TINO 800G', preco_tabela: 15.5, saldo_estoque: 300, unidade: 'PCT', ativo: true, excluido: false, ultima_alteracao: '2026-01-02 10:00:00' },
   { id: 3, codigo: '7', nome: 'PAO QUEIJO TINO 400G', preco_tabela: 8, saldo_estoque: null, unidade: 'PCT', ativo: true, excluido: false, ultima_alteracao: '2026-01-03 10:00:00' },
   { id: 4, codigo: 'IP-COQ-800', nome: 'COQUETEL (excluído)', preco_tabela: 20, saldo_estoque: 10, unidade: 'PCT', ativo: true, excluido: true, ultima_alteracao: '2026-01-04 10:00:00' },
@@ -55,7 +55,7 @@ test('catálogo usa preço e estoque do Mercos', async () => {
   assert.ok(chamadas.limitado, 'tratou o HTTP 429 e tentou de novo');
   assert.equal(chamadas.tokensErrados, 0, 'enviou ApplicationToken e CompanyToken');
   const it = Object.fromEntries(r.json.itens.map(i => [i.codigo, i]));
-  assert.deepEqual(it['IP-TRAD-2KG'], { codigo: 'IP-TRAD-2KG', unidade: 'PCT', preco: 45, situacao: 'Últimas unidades', estoque: 5 }, 'preço da tabela 7 e estoque do Mercos');
+  assert.deepEqual(it['IP-TRAD-800'], { codigo: 'IP-TRAD-800', unidade: 'PCT', preco: 45, situacao: 'Últimas unidades', estoque: 5 }, 'preço da tabela 7 e estoque do Mercos');
   assert.deepEqual(it['TINO-TRAD-400'], { codigo: 'TINO-TRAD-400', unidade: 'PCT', preco: 8 }, 'sem controle de estoque: só o preço');
   assert.equal(it['IP-COQ-800'], undefined, 'produto excluído no Mercos não aparece');
   assert.equal(it['IP-LANCHE-1KG'], undefined, 'produto inativo no Mercos não aparece');
@@ -68,11 +68,11 @@ test('vínculo manual de item do catálogo com produto do Mercos', async () => {
   assert.equal((await req('GET', '/api/mercos', undefined, vend)).status, 403);
   const m = (await req('GET', '/api/mercos', undefined, adm)).json;
   assert.equal(m.mercos.produtos, 4); assert.equal(m.mercos.erro, '');
-  assert.equal(m.catalogo.find(c => c.codigo === 'IP-TRAD-2KG').mercosId, '1');
-  assert.equal((await req('PUT', '/api/mercos/vinculos', { vinculos: { 'TINO-TRAD-800': '2', 'IP-TRAD-2KG': '-', 'NAO-EXISTE': '1' } }, adm)).status, 200);
+  assert.equal(m.catalogo.find(c => c.codigo === 'IP-TRAD-800').mercosId, '1');
+  assert.equal((await req('PUT', '/api/mercos/vinculos', { vinculos: { 'TINO-TRAD-800': '2', 'IP-TRAD-800': '-', 'NAO-EXISTE': '1' } }, adm)).status, 200);
   const it = Object.fromEntries((await req('GET', '/api/catalogo')).json.itens.map(i => [i.codigo, i]));
   assert.equal(it['TINO-TRAD-800'].preco, 15.5); assert.equal(it['TINO-TRAD-800'].estoque, 300);
-  assert.equal(it['IP-TRAD-2KG'], undefined, '"sem vínculo" remove o item');
+  assert.equal(it['IP-TRAD-800'], undefined, '"sem vínculo" remove o item');
   assert.equal((await req('POST', '/api/mercos/sincronizar', {}, adm)).status, 200);
 });
 test('sem erros inesperados no servidor', () => { assert.equal(erros.trim(), '', erros); });

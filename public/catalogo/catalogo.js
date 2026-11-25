@@ -121,7 +121,7 @@
         <h3>${esc(p.nome)}</h3>
         ${botoesPacote(p, 'card')}
         ${p.detalhe ? `<span class="detalhe">${esc(p.detalhe)}</span>` : ''}
-        <div class="meta"><span>${esc(p.marca)}</span><span class="peso" title="Peso de cada unidade">${esc(p.unidadePeso)}</span></div>
+        <div class="meta"><span>${esc(p.marca)}</span>${p.unidadePeso ? `<span class="peso" title="Peso de cada unidade">${esc(p.unidadePeso)}</span>` : ''}</div>
         <div class="preco-linha">${blocoPreco(p)}${seloEstoque(pr)}</div>
         <div class="card-acoes">
           ${seletor(p.codigo, 1, 'card')}
@@ -160,7 +160,7 @@
           ${botoesPacote(p, 'janela')}
           <div class="fatos">
             <span class="fato"><b>Marca</b>${esc(p.marca)}</span><span class="fato"><b>Embalagem</b>${esc(p.embalagem)}</span>
-            <span class="fato"><b>Cada unidade</b>${esc(p.unidadePeso)}</span><span class="fato"><b>Código</b>${esc(p.codigo)}</span>
+            ${p.unidadePeso ? `<span class="fato"><b>Cada unidade</b>${esc(p.unidadePeso)}</span>` : ''}<span class="fato"><b>Código</b>${esc(p.codigo)}</span>
           </div>
           <div class="caixa-preco">${blocoPreco(p)}${seloEstoque(pr) || `<span class="consulta">Estoque sob consulta</span>`}</div>
           <div class="acoes-j">
@@ -211,7 +211,7 @@
           const pr = precos[p.codigo]; const falta = pr && pr.estoque !== undefined && q > pr.estoque;
           return `<div class="c-item"><img src="${imagem(p.imagem)}" alt="">
             <div><div class="nome">${esc(p.nome)}${p.detalhe ? ' — ' + esc(p.detalhe) : ''}</div>
-              <div class="sub">${esc(p.embalagem)} · un. ${esc(p.unidadePeso)} · ${pr && pr.preco ? brl(pr.preco) + (porKg(pr) ? ' o kg' : '') : 'preço sob consulta'}</div>
+              <div class="sub">${esc(p.embalagem)} ${p.unidadePeso ? `· un. ${esc(p.unidadePeso)} ` : ''}· ${pr && pr.preco ? brl(pr.preco) + (porKg(pr) ? ' o kg' : '') : 'preço sob consulta'}</div>
               ${falta ? `<div class="alerta-est">Estoque atual: ${num(pr.estoque)}. O atendente confirma o restante.</div>` : ''}</div>
             <div class="c-dir">${seletor(p.codigo, q, 'carrinho')}<button type="button" class="remover" data-remover="${p.codigo}">Remover</button></div></div>`;
         }).join('') : '<p class="vazio">Seu carrinho está vazio.<br>Toque em <b>Adicionar</b> nos produtos.</p>'}

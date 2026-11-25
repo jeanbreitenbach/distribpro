@@ -390,8 +390,8 @@ footer a{color:inherit}
       p.preco != null ? `*Valor de tabela:* ${brl(p.preco)}/${p.unidade}` : '*Valor:* sob consulta',
       p.preco != null ? `*Total estimado:* ${brl(p.preco * q)}` : ''
     ].filter(Boolean).join('\n');
-    $('btnOrc').href = zap(`Olá, QdiQueijo! Gostaria de *solicitar um orçamento*:\n\n${base}\n\nPoderiam me passar condições de pagamento e prazo de entrega?`);
-    $('btnPed').href = zap(`Olá, QdiQueijo! Gostaria de *fazer um pedido*:\n\n${base}\n\nAguardo a confirmação do pedido. Obrigado!`);
+    $('btnOrc').href = zap(`Olá, Jean! Gostaria de *solicitar um orçamento*:\n\n${base}\n\nPoderiam me passar condições de pagamento e prazo de entrega?`);
+    $('btnPed').href = zap(`Olá, Jean! Gostaria de *fazer um pedido*:\n\n${base}\n\nAguardo a confirmação do pedido. Obrigado!`);
   }
 
   function abrir(i) {
@@ -443,7 +443,7 @@ footer a{color:inherit}
         `   ${qtdTxt(x.q, p)}` + (p.preco != null ? ` × ${brl(p.preco)}/${p.unidade} = ${brl(p.preco * x.q)}` : ' · valor sob consulta');
     }).join('\n');
     const nome = $('carNome').value.trim(), obs = $('carObs').value.trim();
-    return `Olá, QdiQueijo! Gostaria de *${tipo === 'pedido' ? 'fazer um pedido' : 'solicitar um orçamento'}*:\n\n${linhas}\n\n*Total estimado:* ${brl(totalCar())}` +
+    return `Olá, Jean! Gostaria de *${tipo === 'pedido' ? 'fazer um pedido' : 'solicitar um orçamento'}*:\n\n${linhas}\n\n*Total estimado:* ${brl(totalCar())}` +
       (nome ? `\n*Cliente:* ${nome}` : '') + (obs ? `\n*Observações:* ${obs}` : '') +
       (tipo === 'pedido' ? '\n\nAguardo a confirmação do pedido. Obrigado!' : '\n\nPoderiam me passar condições de pagamento e prazo de entrega?');
   }

@@ -95,7 +95,8 @@
   const escolhido = p => (p.grupo && porCodigo[escolha[p.grupo]]) || p;
   const botoesPacote = (p, onde) => {
     const vs = variantes(p); if (vs.length < 2) return '';
-    return `<div class="pacotes" role="group" aria-label="Tamanho do pacote">${vs.map(v => `<button type="button" data-pacote="${v.codigo}" data-local="${onde}" aria-pressed="${v.codigo === p.codigo}">${esc(v.embalagem)}</button>`).join('')}</div>`;
+    const porUnidade = vs.every(v => v.embalagem === vs[0].embalagem); // mesmo pacote, unidades de pesos diferentes (ex.: 38 g e 100 g)
+    return `<div class="pacotes" role="group" aria-label="${porUnidade ? 'Peso de cada unidade' : 'Tamanho do pacote'}">${porUnidade ? '<span class="pacotes-rot">Unidade:</span>' : ''}${vs.map(v => `<button type="button" data-pacote="${v.codigo}" data-local="${onde}" aria-pressed="${v.codigo === p.codigo}">${esc(porUnidade ? v.unidadePeso : v.embalagem)}</button>`).join('')}</div>`;
   };
   function desenhar() {
     const q = normal(filtro.q);

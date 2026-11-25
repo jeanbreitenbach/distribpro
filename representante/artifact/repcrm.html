@@ -615,6 +615,33 @@ rota('POST', '/api/produtos/importar', (req, b) => {
   return { novos, atualizados };
 }, { grava: true });
 
+/** Importa clientes de planilha (ex.: exportação do Mercos). Quem já existe (mesmo CNPJ/CPF ou mesma razão social) é atualizado. */
+rota('POST', '/api/clientes/importar', (req, b) => {
+  exigir(Array.isArray(b.linhas) && b.linhas.length && b.linhas.length <= 10000, 'Nenhum cliente para importar');
+  const dig = v => String(v || '').replace(/\D/g, '');
+  const norm = v => String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const status = R.STATUS_CLIENTE.includes(b.status) ? b.status : 'Ativo', origem = String(b.origem || '').trim().slice(0, 60);
+  const porDoc = new Map(), porNome = new Map();
+  for (const c of db.clientes) { if (dig(c.cnpj).length >= 11) porDoc.set(dig(c.cnpj), c); porNome.set(norm(c.razao), c); }
+  const textos = Object.keys(CAMPOS.clientes).filter(k => CAMPOS.clientes[k] === T && !['status', 'origem'].includes(k));
+  let novos = 0, atualizados = 0, ignorados = 0;
+  for (const l of b.linhas) {
+    const razao = String((l && (l.razao || l.fantasia)) || '').trim().slice(0, 300);
+    if (!razao) { ignorados++; continue; }
+    const doc = dig(l.cnpj);
+    const dados = {};
+    for (const k of textos) if (l[k] != null && String(l[k]).trim()) dados[k] = String(l[k]).trim().slice(0, 1000);
+    dados.razao = razao;
+    const ex = (doc.length >= 11 && porDoc.get(doc)) || porNome.get(norm(razao));
+    if (ex) { Object.assign(ex, dados); atualizados++; }
+    else {
+      const c = { id: uid(), status, origem, cicloCompra: 45, criadoEm: R.hoje(), ...dados };
+      db.clientes.push(c); if (doc.length >= 11) porDoc.set(doc, c); porNome.set(norm(razao), c); novos++;
+    }
+  }
+  exigir(novos + atualizados, 'Nenhuma linha com razão social para importar');
+  return { novos, atualizados, ignorados };
+}, { grava: true });
 rota('PUT', '/api/config', (req, b) => {
   for (const k of ['nome', 'empresa', 'cnpj', 'core', 'telefone', 'email', 'cidade', 'uf', 'rodape']) if (k in b) db.config[k] = String(b[k] ?? '').trim().slice(0, 500);
 }, { grava: true });
@@ -1014,7 +1041,7 @@ async function moverOp(id, etapa) {
 /* ---------- Clientes ---------- */
 VIEWS.clientes = () => {
   const s = state; s.q = s.q ?? ''; s.st = s.st ?? '';
-  setActions(`<button class="btn" onclick="exportarClientes()">⬇ CSV</button><button class="btn pri" onclick="editar('clientes',null,{status:'Prospect',cicloCompra:45},fichaCliente)">+ Cliente</button>`);
+  setActions(`<button class="btn" onclick="importarClientes()">⬆ Importar (Mercos/Excel)</button><button class="btn" onclick="exportarClientes()">⬇ CSV</button><button class="btn pri" onclick="editar('clientes',null,{status:'Prospect',cicloCompra:45},fichaCliente)">+ Cliente</button>`);
   const q = s.q.toLowerCase();
   const l = db.clientes.filter(c => (!s.st || c.status === s.st) && (!q || [c.razao, c.fantasia, c.cnpj, c.cidade, c.contato, c.segmento].join(' ').toLowerCase().includes(q)))
     .sort((a, b) => (a.fantasia || a.razao).localeCompare(b.fantasia || b.razao));
@@ -1359,19 +1386,112 @@ function lerCSV(txt) {
   if (campo || linha.length) { linha.push(campo); linhas.push(linha); }
   return linhas.filter(l => l.some(c => c.trim()));
 }
+/** Lê CSV ou planilha do Excel (.xlsx/.xls) e devolve as linhas como listas de textos. */
+let _xlsx = null;
+function carregarXLSX() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  return _xlsx = _xlsx || new Promise((ok, falha) => {
+    const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    sc.onload = () => ok(window.XLSX); sc.onerror = () => { _xlsx = null; falha(new Error('Não foi possível carregar o leitor de Excel. Verifique a internet ou salve a planilha como CSV.')); };
+    document.head.appendChild(sc);
+  });
+}
+async function lerTabela(f) {
+  const buf = await f.arrayBuffer();
+  if (/\.xlsx?$/i.test(f.name) || /sheet|excel/.test(f.type)) {
+    const X = await carregarXLSX();
+    const wb = X.read(buf, { type: 'array' }), ws = wb.Sheets[wb.SheetNames[0]];
+    return X.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' }).map(l => l.map(c => String(c ?? '').trim())).filter(l => l.some(Boolean));
+  }
+  let txt = new TextDecoder('utf-8').decode(buf);
+  if (txt.includes('\ufffd')) txt = new TextDecoder('windows-1252').decode(buf); // CSV do Excel em português costuma vir em Latin-1
+  return lerCSV(txt.replace(/^﻿/, ''));
+}
+const normCab = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9/ ]/g, ' ').replace(/\s+/g, ' ').trim();
+
+/* ---------- Importar clientes (Mercos ou qualquer planilha) ---------- */
+const CAMPOS_IMPORT = [
+  ['razao', 'Razão social *', ['razao social', 'razao', 'nome razao social', 'razao social/nome', 'nome/razao social', 'cliente', 'nome']],
+  ['fantasia', 'Nome fantasia', ['nome fantasia', 'fantasia']],
+  ['cnpj', 'CNPJ/CPF', ['cnpj/cpf', 'cpf/cnpj', 'cnpj', 'cpf', 'documento', 'cnpj cpf']],
+  ['ie', 'Inscrição estadual', ['inscricao estadual', 'insc estadual', 'ie', 'i e']],
+  ['contato', 'Contato', ['contato', 'nome do contato', 'contatos', 'comprador', 'responsavel']],
+  ['telefone', 'Telefone', ['telefone', 'telefones', 'fone', 'telefone 1', 'telefone comercial']],
+  ['whatsapp', 'WhatsApp / celular', ['whatsapp', 'celular', 'telefone celular', 'telefone 2']],
+  ['email', 'E-mail', ['e mail', 'email', 'emails', 'e mails', 'email nfe']],
+  ['cep', 'CEP', ['cep']],
+  ['logradouro', 'Endereço', ['endereco', 'rua', 'logradouro', 'endereco rua']],
+  ['numero', 'Número', ['numero', 'n', 'no', 'nro']],
+  ['bairro', 'Bairro', ['bairro']],
+  ['cidade', 'Cidade', ['cidade', 'municipio']],
+  ['uf', 'UF', ['uf', 'estado']],
+  ['segmento', 'Segmento', ['segmento', 'ramo', 'ramo de atividade', 'segmento de atuacao', 'categoria']],
+  ['obs', 'Observações', ['observacao', 'observacoes', 'obs', 'informacoes adicionais']],
+];
+function importarClientes() {
+  const nomeCart = typeof Backend !== 'undefined' && Backend.carteira ? ` na carteira <b>${esc(Backend.carteira().nome)}</b>` : '';
+  openModal(`<h2>Importar clientes</h2>
+    <div class="note"><b>Do Mercos:</b> no Mercos, abra <b>Clientes</b>, use <b>Exportar</b> (ou <i>Mais ações → Exportar para Excel</i>) e escolha aqui o arquivo baixado. Se você usa um Mercos para cada representada, exporte de cada um e importe na carteira certa.</div>
+    <p class="hint">Aceita Excel (.xlsx) ou CSV. Os clientes entram${nomeCart}. Quem já existe (mesmo CNPJ ou mesma razão social) é <b>atualizado</b>, não duplicado.</p>
+    <div class="form"><div><label>Arquivo</label><input id="icArq" type="file" accept=".xlsx,.xls,.csv,.txt"></div>
+      <div><label>Situação dos clientes novos</label><select id="icSt">${R.STATUS_CLIENTE.map(x => `<option ${x === 'Ativo' ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
+      <div><label>Origem</label><input id="icOrig" value="Mercos"></div></div>
+    <div id="icPrev" style="margin-top:12px"></div>
+    <div class="actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" id="icOk" disabled>Importar</button></div>`, true);
+  let ls = [], cabIx = 0, mapa = {};
+  const dig = v => String(v || '').replace(/\D/g, '');
+  const linhas = () => ls.slice(cabIx + 1).map(l => {
+    const o = {}; for (const [k] of CAMPOS_IMPORT) if (mapa[k] >= 0) o[k] = l[mapa[k]] || '';
+    // vários telefones numa célula: o primeiro celular vira WhatsApp
+    if (!o.whatsapp && o.telefone) { const cel = String(o.telefone).split(/[,;/|]+/).map(x => x.trim()).find(x => /^(55)?\d{2}9\d{8}$/.test(dig(x))); if (cel) o.whatsapp = cel; }
+    if (o.uf) o.uf = String(o.uf).trim().toUpperCase().slice(0, 2);
+    return o;
+  }).filter(o => (o.razao || o.fantasia || '').trim());
+  const desenhar = () => {
+    const l = linhas(), docs = new Set(db.clientes.map(c => dig(c.cnpj)).filter(d => d.length >= 11)), nomes = new Set(db.clientes.map(c => normCab(c.razao)));
+    const exist = l.filter(o => (dig(o.cnpj).length >= 11 && docs.has(dig(o.cnpj))) || nomes.has(normCab(o.razao || o.fantasia))).length;
+    $('#icPrev').innerHTML = `<p><b>${l.length}</b> clientes no arquivo: <b>${l.length - exist}</b> novos e <b>${exist}</b> já cadastrados (serão atualizados).</p>
+      <details ${mapa.razao >= 0 ? '' : 'open'}><summary class="lnk">Conferir as colunas (${Object.values(mapa).filter(x => x >= 0).length} reconhecidas)</summary>
+      <div class="form" style="margin-top:8px">${CAMPOS_IMPORT.map(([k, lab]) => `<div><label>${lab}</label><select data-k="${k}"><option value="-1">— não importar —</option>${ls[cabIx].map((c, i) => `<option value="${i}" ${mapa[k] === i ? 'selected' : ''}>${esc(c || 'Coluna ' + (i + 1))}</option>`).join('')}</select></div>`).join('')}</div></details><div style="height:10px"></div>
+      ${mapa.razao >= 0 ? tabela(['Razão social', 'CNPJ/CPF', 'Cidade', 'Contato', 'Telefone'], l.slice(0, 6).map(o => `<tr><td>${esc(o.razao || o.fantasia)}</td><td>${esc(o.cnpj || '')}</td><td>${esc(o.cidade || '')}${o.uf ? '/' + esc(o.uf) : ''}</td><td>${esc(o.contato || '')}</td><td>${esc(o.whatsapp || o.telefone || '')}</td></tr>`)) : '<p class="err">Escolha qual coluna tem a razão social (ou o nome) do cliente.</p>'}`;
+    $('#icPrev').querySelectorAll('select[data-k]').forEach(sel => sel.onchange = () => { mapa[sel.dataset.k] = Number(sel.value); desenhar(); });
+    $('#icOk').disabled = !(mapa.razao >= 0 && l.length);
+  };
+  $('#icArq').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    $('#icPrev').innerHTML = '<p class="hint">Lendo o arquivo…</p>';
+    try { ls = await lerTabela(f); } catch (er) { $('#icPrev').innerHTML = `<p class="err">${esc(er.message)}</p>`; return; }
+    if (ls.length < 2) { $('#icPrev').innerHTML = '<p class="err">Arquivo vazio ou sem linhas de clientes.</p>'; return; }
+    // a linha de títulos é a que mais combina com os nomes conhecidos (às vezes há um título antes)
+    const pont = l => l.filter(c => CAMPOS_IMPORT.some(([, , ns]) => ns.includes(normCab(c)))).length;
+    cabIx = 0; for (let i = 1; i < Math.min(10, ls.length); i++) if (pont(ls[i]) > pont(ls[cabIx])) cabIx = i;
+    const cab = ls[cabIx].map(normCab), usadas = new Set(); mapa = {};
+    for (const modo of ['igual', 'comeca']) for (const [k, , ns] of CAMPOS_IMPORT) {
+      if (mapa[k] >= 0) continue;
+      for (const n of ns) { const i = cab.findIndex((c, j) => !usadas.has(j) && (modo === 'igual' ? c === n : c.startsWith(n + ' '))); if (i >= 0) { mapa[k] = i; usadas.add(i); break; } }
+    }
+    desenhar();
+  };
+  $('#icOk').onclick = async () => {
+    const l = linhas(); $('#icOk').disabled = true; $('#icOk').textContent = `Importando ${l.length} clientes…`;
+    const r = await acao(() => api('POST', '/api/clientes/importar', { linhas: l, status: $('#icSt').value, origem: $('#icOrig').value }));
+    if (r) { closeModal(); render(); toast(`${r.novos} cliente(s) novo(s), ${r.atualizados} atualizado(s)`); }
+    else { $('#icOk').disabled = false; $('#icOk').textContent = 'Importar'; }
+  };
+}
+
 function importarProdutos() {
   if (!db.representadas.length) return aviso('Cadastre a representada primeiro.');
   openModal(`<h2>Importar tabela de preços</h2>
-    <p class="hint">Exporte a planilha da representada como <b>CSV</b> (no Excel: Salvar como → CSV). A primeira linha deve ter os títulos das colunas. O sistema reconhece colunas como <i>código, descrição, unidade, preço, IPI, comissão, embalagem, EAN</i>. Produtos com o mesmo código são <b>atualizados</b> (ótimo para reajuste de tabela).</p>
+    <p class="hint">Use a planilha da representada em <b>Excel (.xlsx)</b> ou <b>CSV</b>. A primeira linha deve ter os títulos das colunas. O sistema reconhece colunas como <i>código, descrição, unidade, preço, IPI, comissão, embalagem, EAN</i>. Produtos com o mesmo código são <b>atualizados</b> (ótimo para reajuste de tabela).</p>
     <div class="form"><div><label>Representada</label><select id="iRep">${db.representadas.map(r => `<option value="${r.id}" ${r.id === state.rep ? 'selected' : ''}>${esc(r.nome)}</option>`).join('')}</select></div>
-      <div><label>Arquivo CSV</label><input id="iArq" type="file" accept=".csv,.txt,text/csv"></div></div><div id="iPrev" style="margin-top:12px"></div>
+      <div><label>Arquivo (Excel ou CSV)</label><input id="iArq" type="file" accept=".xlsx,.xls,.csv,.txt"></div></div><div id="iPrev" style="margin-top:12px"></div>
     <div class="actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" id="iOk" disabled>Importar</button></div>`, true);
   let linhasOk = [];
   $('#iArq').onchange = async e => {
     const f = e.target.files[0]; if (!f) return;
-    const buf = await f.arrayBuffer(); let txt = new TextDecoder('utf-8').decode(buf);
-    if (txt.includes('\ufffd')) txt = new TextDecoder('windows-1252').decode(buf); // planilhas do Excel em português costumam vir em Latin-1
-    const ls = lerCSV(txt.replace(/^﻿/, '')); if (ls.length < 2) return $('#iPrev').innerHTML = '<p class="err">Arquivo vazio ou sem linhas de dados.</p>';
+    let ls; try { ls = await lerTabela(f); } catch (er) { return $('#iPrev').innerHTML = `<p class="err">${esc(er.message)}</p>`; }
+    if (ls.length < 2) return $('#iPrev').innerHTML = '<p class="err">Arquivo vazio ou sem linhas de dados.</p>';
     const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
     const cab = ls[0].map(norm);
     const acha = (...nomes) => cab.findIndex(c => nomes.some(n => c === n || c.startsWith(n)));

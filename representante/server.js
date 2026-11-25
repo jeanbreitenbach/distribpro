@@ -338,6 +338,33 @@ rota('POST', '/api/produtos/importar', (req, b) => {
   return { novos, atualizados };
 }, { grava: true });
 
+/** Importa clientes de planilha (ex.: exportação do Mercos). Quem já existe (mesmo CNPJ/CPF ou mesma razão social) é atualizado. */
+rota('POST', '/api/clientes/importar', (req, b) => {
+  exigir(Array.isArray(b.linhas) && b.linhas.length && b.linhas.length <= 10000, 'Nenhum cliente para importar');
+  const dig = v => String(v || '').replace(/\D/g, '');
+  const norm = v => String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const status = R.STATUS_CLIENTE.includes(b.status) ? b.status : 'Ativo', origem = String(b.origem || '').trim().slice(0, 60);
+  const porDoc = new Map(), porNome = new Map();
+  for (const c of db.clientes) { if (dig(c.cnpj).length >= 11) porDoc.set(dig(c.cnpj), c); porNome.set(norm(c.razao), c); }
+  const textos = Object.keys(CAMPOS.clientes).filter(k => CAMPOS.clientes[k] === T && !['status', 'origem'].includes(k));
+  let novos = 0, atualizados = 0, ignorados = 0;
+  for (const l of b.linhas) {
+    const razao = String((l && (l.razao || l.fantasia)) || '').trim().slice(0, 300);
+    if (!razao) { ignorados++; continue; }
+    const doc = dig(l.cnpj);
+    const dados = {};
+    for (const k of textos) if (l[k] != null && String(l[k]).trim()) dados[k] = String(l[k]).trim().slice(0, 1000);
+    dados.razao = razao;
+    const ex = (doc.length >= 11 && porDoc.get(doc)) || porNome.get(norm(razao));
+    if (ex) { Object.assign(ex, dados); atualizados++; }
+    else {
+      const c = { id: uid(), status, origem, cicloCompra: 45, criadoEm: R.hoje(), ...dados };
+      db.clientes.push(c); if (doc.length >= 11) porDoc.set(doc, c); porNome.set(norm(razao), c); novos++;
+    }
+  }
+  exigir(novos + atualizados, 'Nenhuma linha com razão social para importar');
+  return { novos, atualizados, ignorados };
+}, { grava: true });
 rota('PUT', '/api/config', (req, b) => {
   for (const k of ['nome', 'empresa', 'cnpj', 'core', 'telefone', 'email', 'cidade', 'uf', 'rodape']) if (k in b) db.config[k] = String(b[k] ?? '').trim().slice(0, 500);
 }, { grava: true });

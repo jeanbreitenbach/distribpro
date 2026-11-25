@@ -120,6 +120,23 @@ test('cadastros, importação de tabela e exclusão protegida', async () => {
   assert.equal((await req('PUT', '/api/crud/nada', {})).status, 404);
 });
 
+test('importar clientes (planilha do Mercos): cria, atualiza por CNPJ, não duplica', async () => {
+  const antes = (await ok('GET', '/api/data')).data.clientes;
+  const existente = antes.find(c => c.cnpj);
+  const r = await ok('POST', '/api/clientes/importar', { status: 'Ativo', origem: 'Mercos', linhas: [
+    { razao: 'Loja Nova do Mercos Ltda', cnpj: '11.222.333/0001-81', cidade: 'Londrina', uf: 'PR', telefone: '(43) 3333-0000' },
+    { razao: 'LOJA NOVA DO MERCOS LTDA', cnpj: '11222333000181', email: 'a@b.com' }, // mesma loja, outra linha
+    { razao: 'Outro nome', cnpj: existente.cnpj.replace(/\D/g, ''), contato: 'Atualizado' },
+    { razao: '', cnpj: '1' },
+  ] });
+  assert.deepEqual([r.novos, r.atualizados, r.ignorados], [1, 2, 1]);
+  const nova = r.data.clientes.filter(c => c.razao.toLowerCase().startsWith('loja nova do mercos'));
+  assert.equal(nova.length, 1); assert.equal(nova[0].email, 'a@b.com'); assert.equal(nova[0].cidade, 'Londrina'); assert.equal(nova[0].origem, 'Mercos');
+  assert.equal(r.data.clientes.find(c => c.id === existente.id).contato, 'Atualizado');
+  assert.equal(r.data.clientes.length, antes.length + 1);
+  assert.equal((await req('POST', '/api/clientes/importar', { linhas: [] })).status, 400);
+});
+
 test('backup, restauração e senha', async () => {
   const b = (await ok('GET', '/api/backup')).backup;
   const n = b.pedidos.length;

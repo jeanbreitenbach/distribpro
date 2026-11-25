@@ -1,0 +1,105 @@
+{
+  "data": "24/11/2026",
+  "itens": {
+    "DC-TRAD-800": {
+      "codigo": "DC-TRAD-800",
+      "preco": 29.0,
+      "unidade": "KG"
+    },
+    "IP-CHURROS-800": {
+      "codigo": "IP-CHURROS-800",
+      "preco": 24.0,
+      "unidade": "KG"
+    },
+    "IP-COQ-800": {
+      "codigo": "IP-COQ-800",
+      "preco": 23.8,
+      "unidade": "KG"
+    },
+    "IP-GOIABADA-800": {
+      "codigo": "IP-GOIABADA-800",
+      "preco": 39.0,
+      "unidade": "KG"
+    },
+    "IP-GOUR-800": {
+      "codigo": "IP-GOUR-800",
+      "preco": 25.0,
+      "unidade": "KG"
+    },
+    "IP-LANCHE-1KG": {
+      "codigo": "IP-LANCHE-1KG",
+      "preco": 24.0,
+      "unidade": "KG"
+    },
+    "IP-PROVOLONE-1KG": {
+      "codigo": "IP-PROVOLONE-1KG",
+      "preco": 28.0,
+      "unidade": "KG"
+    },
+    "IP-TAPIOCA-400": {
+      "codigo": "IP-TAPIOCA-400",
+      "preco": 27.5,
+      "unidade": "KG"
+    },
+    "IP-TRAD-2KG": {
+      "codigo": "IP-TRAD-2KG",
+      "preco": 22.0,
+      "unidade": "KG"
+    },
+    "IP-TRAD-400": {
+      "codigo": "IP-TRAD-400",
+      "preco": 23.75,
+      "unidade": "KG"
+    },
+    "IP-TRAD-800": {
+      "codigo": "IP-TRAD-800",
+      "preco": 22.5,
+      "unidade": "KG"
+    },
+    "TINO-COQ-2KG": {
+      "codigo": "TINO-COQ-2KG",
+      "preco": 15.0,
+      "unidade": "KG"
+    },
+    "TINO-TRAD-400": {
+      "codigo": "TINO-TRAD-400",
+      "preco": 16.5,
+      "unidade": "KG"
+    },
+    "TINO-TRAD-800": {
+      "codigo": "TINO-TRAD-800",
+      "preco": 15.12,
+      "unidade": "KG"
+    },
+    "TT-CARNE-100": {
+      "codigo": "TT-CARNE-100",
+      "preco": 40.0,
+      "unidade": "KG"
+    },
+    "TT-CARNE-38": {
+      "codigo": "TT-CARNE-38",
+      "preco": 40.0,
+      "unidade": "KG"
+    },
+    "TT-DOCELEITE-38": {
+      "codigo": "TT-DOCELEITE-38",
+      "preco": 40.0,
+      "unidade": "KG"
+    },
+    "TT-FRANGO-100": {
+      "codigo": "TT-FRANGO-100",
+      "preco": 39.0,
+      "unidade": "KG"
+    },
+    "TT-FRANGO-38": {
+      "codigo": "TT-FRANGO-38",
+      "preco": 39.0,
+      "unidade": "KG"
+    },
+    "TT-REQ-38": {
+      "codigo": "TT-REQ-38",
+      "preco": 40.0,
+      "unidade": "KG"
+    }
+  }
+}

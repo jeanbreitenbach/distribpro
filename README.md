@@ -47,6 +47,20 @@ Endereço: **`/catalogo`** (ex.: `https://seu-sistema.onrender.com/catalogo`). N
 
 **Tabelas nutricionais**: as da Idealpan, Dona Creuza e Tinô foram copiadas do site oficial (www.idealpan.com.br), junto com ingredientes, alérgicos e modo de preparo. Elas mostram o link da fonte. As da **Tia Tânia** ainda são valores de **referência** e aparecem com aviso, porque o site tiatania.com.br não respondeu. Quando tiver a tabela da embalagem, copie-a para `lib/catalogo.js` e marque `confirmada: true`.
 
+## App Android do catálogo (APK)
+
+O catálogo também existe como **app Android** ("Mayrink Catálogo"), para instalar no celular dos clientes e vendedores sem passar pela Play Store.
+
+- Funciona **sem internet**: fotos, preços, tabelas nutricionais e carrinho ficam dentro do app. A internet só é usada para abrir o WhatsApp.
+- Os botões de orçamento e pedido abrem o **WhatsApp** do aparelho com a mensagem pronta. O botão *Voltar* fecha a janela do produto ou o carrinho.
+- Os **preços** do app vêm de `android/precos.json` (preço por kg, unidade `KG`), e não do servidor. Para atualizar preços ou produtos: edite `android/precos.json` e/ou `lib/catalogo.js`, aumente `VERSAO_CODIGO` em `android/build.sh` e gere o APK de novo.
+- **Gerar o APK**: com JDK 17+ e o Android SDK (`platforms;android-34` e `build-tools;35.0.0`):
+  ```bash
+  ANDROID_HOME=/caminho/do/android-sdk ./android/build.sh   # → android/saida/mayrink-catalogo.apk
+  ```
+- **Assinatura**: o script cria `android/assinatura.jks` na primeira vez (fora do Git). **Guarde esse arquivo**: as atualizações precisam da mesma chave, senão o Android só instala depois de desinstalar a versão antiga. A senha vem de `ASSINATURA_SENHA` (padrão `mayrink-catalogo`).
+- **Instalar**: envie o arquivo `.apk` pelo WhatsApp ou Google Drive, abra no celular e permita *Instalar apps desconhecidos* quando o Android pedir.
+
 ## Compras, contas a pagar e fluxo de caixa (administrador)
 
 - **Fornecedores**: cadastro com CNPJ, contato, prazo padrão de pagamento e dados de PIX/banco. Mostra o histórico de compras e o que está em aberto com cada um.
@@ -231,6 +245,7 @@ lib/seed.js        dados de demonstração
 lib/mercos.js      leitura de produtos, preços e estoque do Mercos (API)
 lib/catalogo.js    produtos, nutrição e WhatsApp do catálogo público (/catalogo)
 public/catalogo*   página do catálogo, carrinho e fotos
+android/           app Android do catálogo (WebView) e script que gera o APK
 public/            interface web (HTML/CSS/JS, sem build)
 exemplos/          XML de NF-e e extrato OFX fictícios para testar as importações
 data/              banco SQLite (criado automaticamente)

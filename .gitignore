@@ -1,3 +1,5 @@
 data/
 node_modules/
 .env
+android/saida/
+android/assinatura.jks

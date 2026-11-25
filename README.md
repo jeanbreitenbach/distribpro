@@ -34,7 +34,7 @@ Endereço: **`/catalogo`** (ex.: `https://seu-sistema.onrender.com/catalogo`). N
 
 - **Produtos da Linha Varejo** (Idealpan, Tia Tânia, Mix, Empanados, Dona Creuza e Low Price), com busca e filtro por linha.
 - **Clicar no produto** abre a janela com foto, embalagem, peso da unidade, **tabela nutricional**, modo de preparo e conservação. Cada produto tem link próprio (`/catalogo#CODIGO`, ex.: `/catalogo#IP-TRAD-800`), bom para mandar no WhatsApp.
-- Botões **Solicitar orçamento** e **Fazer pedido**, que abrem o WhatsApp **(48) 99941-0749** com a mensagem pronta para o Rafael.
+- Botões **Solicitar orçamento** e **Fazer pedido**, que abrem o WhatsApp **(48) 98814-7567** com a mensagem pronta para o Jean.
 - **Carrinho**: guarda os itens no aparelho, calcula o total estimado e envia o pedido ou o orçamento completo pelo WhatsApp, com os dados do cliente (nome, CNPJ/CPF, cidade, telefone e observações).
 - **Preço e estoque ao vivo**: vêm do cadastro de produtos do DistribPro, pelo **código** do produto (ex.: `IP-TRAD-800`), e se atualizam a cada minuto. Use **Produtos → Cadastrar itens do catálogo** para criar de uma vez os produtos que faltam (entram com preço e estoque zerados) e depois preencha preço e estoque. Produto sem preço aparece como *Preço sob consulta*, com o botão *Consultar preço e estoque com o Rafael*.
 - **Integração com o Mercos**: com os tokens do Mercos configurados, o catálogo passa a mostrar **preço e estoque do Mercos** em vez dos do DistribPro. O servidor lê os produtos pela API do Mercos (só leitura, nada é gravado lá) a cada 5 minutos.

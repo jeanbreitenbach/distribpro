@@ -242,7 +242,7 @@ test('arquivos estáticos, segurança e app instalável', async () => {
 test('catálogo público: página, preço e estoque sem login, sem custo', async () => {
   const pg = await fetch(`http://127.0.0.1:${PORTA}/catalogo`); const html = await pg.text();
   assert.equal(pg.status, 200); assert.match(html, /catalogo\/catalogo\.js/);
-  assert.match(await (await fetch(`http://127.0.0.1:${PORTA}/catalogo-dados.js`)).text(), /5548999410749/);
+  assert.match(await (await fetch(`http://127.0.0.1:${PORTA}/catalogo-dados.js`)).text(), /5548988147567/);
   const img = await fetch(`http://127.0.0.1:${PORTA}/catalogo/img/tino.jpg`); assert.equal(img.headers.get('content-type'), 'image/jpeg');
   const r = await req('GET', '/api/catalogo');
   assert.equal(r.status, 200); assert.equal(r.json.itens.length, require('../lib/catalogo').PRODUTOS.length);

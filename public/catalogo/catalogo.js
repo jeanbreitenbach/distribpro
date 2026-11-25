@@ -54,7 +54,10 @@
   async function carregarPrecos() {
     if (window.CATALOGO_SEM_API) { // página publicada fora do servidor: usa a tabela de preços gravada nela, se houver
       const f = window.CATALOGO_PRECOS_FIXOS;
-      if (f && f.itens) { precos = f.itens; desenhar(); }
+      if (f && f.itens) {
+        precos = f.itens; desenhar();
+        const aberto = $('#janelaProduto').dataset.codigo; if ($('#janelaProduto').open && aberto) { desenharProduto(aberto, true); atualizarLinks(); }
+      }
       $('#status').textContent = f && f.itens ? `Preços da tabela de ${f.data}. Estoque e prazo de entrega: consulte o ${CONFIG.atendente} pelo WhatsApp.` : `Preços e estoque sob consulta com o ${CONFIG.atendente} pelo WhatsApp.`;
       return;
     }
@@ -99,7 +102,7 @@
     const pr = precos[p.codigo]; const esgotado = pr && pr.situacao === 'Esgotado';
     return `<article class="card">
       <button type="button" class="card-abrir" data-abrir="${p.codigo}" aria-label="Ver detalhes e tabela nutricional de ${esc(p.nome)} ${esc(p.detalhe)} ${esc(p.embalagem)}">
-        <img src="${imagem(p.imagem)}" alt="" loading="lazy" width="360" height="360">
+        <img src="${imagem(p.imagem)}" alt="" loading="lazy" width="640" height="640">
         <span class="selos">${p.selos.map(s => `<span class="selo">${esc(s)}</span>`).join('')}</span>
         <span class="emb">${esc(p.embalagem)}</span>
       </button>
@@ -138,7 +141,8 @@
     j.dataset.codigo = codigo;
     j.innerHTML = `<div class="j-topo"><h2 id="pTitulo">${esc(p.nome)}</h2><button type="button" class="fechar" data-fechar aria-label="Fechar">×</button></div>
       <div class="j-corpo">
-        <div class="j-img"><img src="${imagem(p.imagem)}" alt="Embalagem de ${esc(p.nome)} ${esc(p.embalagem)}" width="360" height="360"></div>
+        <div class="j-img"><img src="${imagem(p.imagem)}" alt="Embalagem de ${esc(p.nome)} ${esc(p.embalagem)}" width="640" height="640">
+          ${p.foto ? `<img class="foto-pronto" src="${imagem(p.foto)}" alt="${esc(p.nome)} pronto para servir" width="560" height="560">` : ''}</div>
         <div class="j-info">
           ${p.detalhe ? `<span class="detalhe">${esc(p.detalhe)}</span>` : ''}
           <div class="fatos">

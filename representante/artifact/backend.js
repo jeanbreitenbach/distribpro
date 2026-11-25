@@ -11,6 +11,9 @@ const Backend = (() => {
   /*@@SEED@@*/
 
   let db = baseVazia(); db.usuarios = [];
+  // Carteiras separadas: cada uma é um CRM completo, com os dados em "carteiras/<id>/..."
+  const CARTEIRAS = [{ id: 'mayrink', nome: 'Mayrink' }, { id: 'trac', nome: 'TRAC' }];
+  let carteira = CARTEIRAS[0], prefixo = 'carteiras/mayrink/', geracao = 0, cancelar = [];
   let store = null, aoMudar = () => { };
   const confirmado = new Map(); // "col/id" → JSON (chaves ordenadas) do que está gravado no banco
   // JSON com chaves em ordem: o banco pode devolver os campos noutra ordem, e isso não é alteração
@@ -41,14 +44,14 @@ const Backend = (() => {
   }
   /** Grava só o que mudou desde o último estado confirmado, até 6 gravações por vez. */
   async function persistir() {
-    const ops = [], vivos = new Set();
+    const ops = [], vivos = new Set(), pre = prefixo, P = k => pre + k;
     for (const c of COLS) for (const o of db[c]) {
       const k = c + '/' + o.id, j = canon(o); vivos.add(k);
-      if (confirmado.get(k) !== j) ops.push(async () => { await comRetentativa(() => store.doc(k).set(JSON.parse(j))); confirmado.set(k, j); });
+      if (confirmado.get(k) !== j) ops.push(async () => { await comRetentativa(() => store.doc(P(k)).set(JSON.parse(j))); confirmado.set(k, j); });
     }
     const jc = canon({ config: db.config, seq: db.seq }); vivos.add(CFG);
-    if (confirmado.get(CFG) !== jc) ops.push(async () => { await comRetentativa(() => store.doc(CFG).set(JSON.parse(jc))); confirmado.set(CFG, jc); });
-    for (const k of [...confirmado.keys()]) if (!vivos.has(k)) ops.push(async () => { await comRetentativa(() => store.doc(k).delete()); confirmado.delete(k); });
+    if (confirmado.get(CFG) !== jc) ops.push(async () => { await comRetentativa(() => store.doc(P(CFG)).set(JSON.parse(jc))); confirmado.set(CFG, jc); });
+    for (const k of [...confirmado.keys()]) if (!vivos.has(k)) ops.push(async () => { await comRetentativa(() => store.doc(P(k)).delete()); confirmado.delete(k); });
     let i = 0;
     await Promise.all(Array.from({ length: Math.min(6, ops.length) }, async () => { while (i < ops.length) await ops[i++](); }));
   }
@@ -85,28 +88,45 @@ const Backend = (() => {
     const p = fila.then(exec, exec); fila = p.catch(() => { }); return p;
   }
 
-  /** Conecta ao banco da página e acompanha as mudanças (de outro aparelho também). */
-  async function iniciar(onChange) {
-    aoMudar = onChange;
-    store = await claude.use('db');
-    if (!store) return { ok: false };
+  const configPadrao = () => ({ ...baseVazia().config, empresa: carteira.nome });
+  /** Assina as coleções da carteira atual (e para de ouvir a anterior). */
+  function conectar() {
+    cancelar.forEach(f => f()); cancelar = [];
+    const g = ++geracao; confirmado.clear();
+    db = baseVazia(); db.usuarios = []; db.config = configPadrao();
     const pendentes = new Set([...COLS, CFG]);
     let pronto; const primeira = new Promise(r => pronto = r);
     const marcar = k => { if (pendentes.delete(k) && !pendentes.size) pronto(); };
-    const ouvir = c => store.collection(c).onSnapshot(snap => {
+    const ouvir = c => store.collection(prefixo + c).onSnapshot(snap => {
+      if (g !== geracao) return; // resposta atrasada da carteira anterior
       const vistos = new Set();
       db[c] = snap.docs.filter(d => d.exists).map(d => { const o = JSON.parse(JSON.stringify(d.data())); confirmado.set(c + '/' + d.id, canon(o)); vistos.add(c + '/' + d.id); return o; });
       for (const k of [...confirmado.keys()]) if (k.startsWith(c + '/') && !vistos.has(k)) confirmado.delete(k);
       marcar(c); if (!pendentes.size) aoMudar();
     }, e => { console.error('db', c, e); marcar(c); });
-    COLS.forEach(ouvir);
-    store.doc(CFG).onSnapshot(d => {
-      if (d.exists) { const v = JSON.parse(JSON.stringify(d.data())); confirmado.set(CFG, canon(v)); db.config = { ...baseVazia().config, ...(v.config || {}) }; db.seq = v.seq || db.seq; }
+    COLS.forEach(c => cancelar.push(ouvir(c)));
+    cancelar.push(store.doc(prefixo + CFG).onSnapshot(d => {
+      if (g !== geracao) return;
+      if (d.exists) { const v = JSON.parse(JSON.stringify(d.data())); confirmado.set(CFG, canon(v)); db.config = { ...configPadrao(), ...(v.config || {}) }; db.seq = v.seq || db.seq; }
       marcar(CFG); if (!pendentes.size) aoMudar();
-    }, e => { console.error('db config', e); marcar(CFG); });
+    }, e => { console.error('db config', e); marcar(CFG); }));
     const tempo = new Promise(r => setTimeout(() => r('lento'), 10000));
-    return { ok: true, lento: (await Promise.race([primeira, tempo])) === 'lento' };
+    return Promise.race([primeira, tempo]).then(x => ({ ok: true, lento: x === 'lento' }));
+  }
+  /** Conecta ao banco da página e acompanha as mudanças (de outro aparelho também). */
+  async function iniciar(onChange, idCarteira) {
+    aoMudar = onChange;
+    store = await claude.use('db');
+    if (!store) return { ok: false };
+    carteira = CARTEIRAS.find(c => c.id === idCarteira) || CARTEIRAS[0]; prefixo = 'carteiras/' + carteira.id + '/';
+    return conectar();
+  }
+  /** Troca de carteira depois que as gravações em andamento terminarem. */
+  function trocar(id) {
+    const c = CARTEIRAS.find(x => x.id === id); if (!c) return Promise.resolve({ ok: false });
+    const p = fila.then(() => { carteira = c; prefixo = 'carteiras/' + c.id + '/'; return conectar(); });
+    fila = p.catch(() => { }); return p;
   }
 
-  return { chamar, iniciar, dados: () => Object.assign(db, { me: { nome: db.config.nome || 'Representante' } }), baseVazia };
+  return { chamar, iniciar, trocar, CARTEIRAS, carteira: () => carteira, dados: () => Object.assign(db, { me: { nome: db.config.nome || 'Representante' } }), baseVazia };
 })();

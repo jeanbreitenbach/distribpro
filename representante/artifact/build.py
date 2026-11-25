@@ -83,6 +83,11 @@ function baixarPedido(id) {
 for a, b in subs:
     app = troca(app, a, b)
 
+# seletor de carteira na barra do topo (visível também no celular)
+app = troca(app, '<h1 id="title"></h1>', '${seletorCarteiras()}<h1 id="title"></h1>')
+app = troca(app, "<div class=\"brand\"><span>R</span>RepCRM</div><nav id=\"nav\">", "<div class=\"brand\"><span>R</span>RepCRM</div><div class=\"cart-nome\">${esc(Backend.carteira().nome)}</div><nav id=\"nav\">")
+app = troca(app, "<h3>Seus dados (saem no pedido impresso)</h3>", "<h3>Dados da carteira ${esc(Backend.carteira().nome)} (saem no pedido impresso)</h3>")
+
 # Configurações: sem senha/usuários (o acesso é pela conta Claude); backup e demonstração continuam
 cfg_ini = app.index("    <div><div class=\"card\"><h3>Minha senha</h3>")
 cfg_fim = app.index("      <div class=\"card\" style=\"margin-top:14px\"><h3>Backup</h3>")
@@ -98,9 +103,21 @@ app = app[:ini] + """async function restaurar(f) {
   await acao(() => api('POST', '/api/restore', { backup: d.backup || d }), 'Backup restaurado');
 }
 async function resetar(modo) {
-  if (modo === 'demo') { if (!(await confirmar('Substituir TODOS os dados por dados de exemplo (fictícios)?', 'Carregar exemplo'))) return; }
-  else if ((await perguntar('Isso apaga TODOS os clientes, pedidos, comissões e cadastros. Baixe um backup antes. Digite APAGAR para confirmar.', '')) !== 'APAGAR') return;
+  if (modo === 'demo') { if (!(await confirmar(`Substituir TODOS os dados da carteira ${Backend.carteira().nome} por dados de exemplo (fictícios)?`, 'Carregar exemplo'))) return; }
+  else if ((await perguntar(`Isso apaga TODOS os clientes, pedidos, comissões e cadastros da carteira ${Backend.carteira().nome}. Baixe um backup antes. Digite APAGAR para confirmar.`, '')) !== 'APAGAR') return;
   await acao(() => api('POST', '/api/reset', { modo }), modo === 'demo' ? 'Exemplo carregado' : 'Tudo apagado');
+}
+
+/* ================== CARTEIRAS (Mayrink / TRAC) ================== */
+let trocando = false;
+const seletorCarteiras = () => `<div class="carteiras" role="group" aria-label="Carteira">${Backend.CARTEIRAS.map(c => `<button class="${c.id === Backend.carteira().id ? 'on' : ''}" aria-pressed="${c.id === Backend.carteira().id}" onclick="trocarCarteira('${c.id}')">${esc(c.nome)}</button>`).join('')}</div>`;
+async function trocarCarteira(id) {
+  if (trocando || id === Backend.carteira().id) return;
+  trocando = true; closeModal(); state = {};
+  document.body.dataset.carteira = id;
+  $('#view').innerHTML = '<div class="carregando">Abrindo carteira…</div>';
+  try { await Backend.trocar(id); try { localStorage.setItem('rc_carteira', id); } catch (e) { } }
+  finally { trocando = false; db = Backend.dados(); iniciarApp(); toast('Carteira ' + Backend.carteira().nome); }
 }
 
 /* ================== DIÁLOGOS (dentro da página) ================== */
@@ -127,7 +144,9 @@ app = app[:ini] + """/* ================== INÍCIO ================== */
 (async () => {
   $('#root').innerHTML = '<div class="carregando">Carregando seus dados…</div>';
   let primeira = true;
-  const r = await Backend.iniciar(() => { if (primeira) return; db = Backend.dados(); render(); });
+  let lembrada = ''; try { lembrada = localStorage.getItem('rc_carteira') || ''; } catch (e) { }
+  const r = await Backend.iniciar(() => { if (primeira || trocando) return; db = Backend.dados(); render(); }, lembrada);
+  document.body.dataset.carteira = Backend.carteira().id;
   if (!r.ok) { $('#root').innerHTML = '<div class="carregando"><b>Não foi possível abrir o banco de dados.</b><br>Entre na sua conta Claude para usar o RepCRM.</div>'; return; }
   primeira = false; db = Backend.dados(); iniciarApp();
   if (r.lento) toast('A conexão está lenta: alguns dados podem aparecer em instantes.');
@@ -157,6 +176,14 @@ css += """
 .dlg-bg{position:fixed;inset:0;background:rgba(10,15,25,.55);display:grid;place-items:center;padding:16px;z-index:200}
 .dlg{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:14px;padding:18px 20px;width:100%;max-width:440px}
 .dlg p{margin:0 0 12px;white-space:pre-wrap}
+.carteiras{display:inline-flex;border:1px solid var(--line);border-radius:10px;padding:3px;background:var(--panel);gap:2px}
+.carteiras button{font:inherit;font-weight:600;border:0;background:none;color:var(--muted);padding:6px 14px;border-radius:7px;cursor:pointer}
+.carteiras button.on{background:var(--pri);color:var(--on-pri)}
+.carteiras button:focus-visible{outline:2px solid var(--pri);outline-offset:1px}
+.cart-nome{margin:-8px 10px 8px;padding:4px 10px;border-radius:7px;background:var(--pri);color:var(--on-pri);font-weight:600;font-size:12px;display:inline-block}
+body[data-carteira="trac"]{--pri:#1d4ed8;--pri2:#1e40af;--pri-soft:#e6edfd;--on-pri:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body[data-carteira="trac"]{--pri:#7aa2ff;--pri2:#5b8cff;--pri-soft:#1d2a4a;--on-pri:#0b1530}}
+:root[data-theme="dark"] body[data-carteira="trac"]{--pri:#7aa2ff;--pri2:#5b8cff;--pri-soft:#1d2a4a;--on-pri:#0b1530}
 """
 
 js = lambda s: s.replace('</script', '<\\/script')

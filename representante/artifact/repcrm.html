@@ -164,6 +164,14 @@ a.btn{text-decoration:none}
 .dlg-bg{position:fixed;inset:0;background:rgba(10,15,25,.55);display:grid;place-items:center;padding:16px;z-index:200}
 .dlg{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:14px;padding:18px 20px;width:100%;max-width:440px}
 .dlg p{margin:0 0 12px;white-space:pre-wrap}
+.carteiras{display:inline-flex;border:1px solid var(--line);border-radius:10px;padding:3px;background:var(--panel);gap:2px}
+.carteiras button{font:inherit;font-weight:600;border:0;background:none;color:var(--muted);padding:6px 14px;border-radius:7px;cursor:pointer}
+.carteiras button.on{background:var(--pri);color:var(--on-pri)}
+.carteiras button:focus-visible{outline:2px solid var(--pri);outline-offset:1px}
+.cart-nome{margin:-8px 10px 8px;padding:4px 10px;border-radius:7px;background:var(--pri);color:var(--on-pri);font-weight:600;font-size:12px;display:inline-block}
+body[data-carteira="trac"]{--pri:#1d4ed8;--pri2:#1e40af;--pri-soft:#e6edfd;--on-pri:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body[data-carteira="trac"]{--pri:#7aa2ff;--pri2:#5b8cff;--pri-soft:#1d2a4a;--on-pri:#0b1530}}
+:root[data-theme="dark"] body[data-carteira="trac"]{--pri:#7aa2ff;--pri2:#5b8cff;--pri-soft:#1d2a4a;--on-pri:#0b1530}
 
 </style>
 <div id="root"></div>
@@ -358,6 +366,9 @@ function seedDemo(uid) {
 
 
   let db = baseVazia(); db.usuarios = [];
+  // Carteiras separadas: cada uma é um CRM completo, com os dados em "carteiras/<id>/..."
+  const CARTEIRAS = [{ id: 'mayrink', nome: 'Mayrink' }, { id: 'trac', nome: 'TRAC' }];
+  let carteira = CARTEIRAS[0], prefixo = 'carteiras/mayrink/', geracao = 0, cancelar = [];
   let store = null, aoMudar = () => { };
   const confirmado = new Map(); // "col/id" → JSON (chaves ordenadas) do que está gravado no banco
   // JSON com chaves em ordem: o banco pode devolver os campos noutra ordem, e isso não é alteração
@@ -388,14 +399,14 @@ function seedDemo(uid) {
   }
   /** Grava só o que mudou desde o último estado confirmado, até 6 gravações por vez. */
   async function persistir() {
-    const ops = [], vivos = new Set();
+    const ops = [], vivos = new Set(), pre = prefixo, P = k => pre + k;
     for (const c of COLS) for (const o of db[c]) {
       const k = c + '/' + o.id, j = canon(o); vivos.add(k);
-      if (confirmado.get(k) !== j) ops.push(async () => { await comRetentativa(() => store.doc(k).set(JSON.parse(j))); confirmado.set(k, j); });
+      if (confirmado.get(k) !== j) ops.push(async () => { await comRetentativa(() => store.doc(P(k)).set(JSON.parse(j))); confirmado.set(k, j); });
     }
     const jc = canon({ config: db.config, seq: db.seq }); vivos.add(CFG);
-    if (confirmado.get(CFG) !== jc) ops.push(async () => { await comRetentativa(() => store.doc(CFG).set(JSON.parse(jc))); confirmado.set(CFG, jc); });
-    for (const k of [...confirmado.keys()]) if (!vivos.has(k)) ops.push(async () => { await comRetentativa(() => store.doc(k).delete()); confirmado.delete(k); });
+    if (confirmado.get(CFG) !== jc) ops.push(async () => { await comRetentativa(() => store.doc(P(CFG)).set(JSON.parse(jc))); confirmado.set(CFG, jc); });
+    for (const k of [...confirmado.keys()]) if (!vivos.has(k)) ops.push(async () => { await comRetentativa(() => store.doc(P(k)).delete()); confirmado.delete(k); });
     let i = 0;
     await Promise.all(Array.from({ length: Math.min(6, ops.length) }, async () => { while (i < ops.length) await ops[i++](); }));
   }
@@ -644,30 +655,47 @@ rota('POST', '/api/reset', (req, b, u) => {
     const p = fila.then(exec, exec); fila = p.catch(() => { }); return p;
   }
 
-  /** Conecta ao banco da página e acompanha as mudanças (de outro aparelho também). */
-  async function iniciar(onChange) {
-    aoMudar = onChange;
-    store = await claude.use('db');
-    if (!store) return { ok: false };
+  const configPadrao = () => ({ ...baseVazia().config, empresa: carteira.nome });
+  /** Assina as coleções da carteira atual (e para de ouvir a anterior). */
+  function conectar() {
+    cancelar.forEach(f => f()); cancelar = [];
+    const g = ++geracao; confirmado.clear();
+    db = baseVazia(); db.usuarios = []; db.config = configPadrao();
     const pendentes = new Set([...COLS, CFG]);
     let pronto; const primeira = new Promise(r => pronto = r);
     const marcar = k => { if (pendentes.delete(k) && !pendentes.size) pronto(); };
-    const ouvir = c => store.collection(c).onSnapshot(snap => {
+    const ouvir = c => store.collection(prefixo + c).onSnapshot(snap => {
+      if (g !== geracao) return; // resposta atrasada da carteira anterior
       const vistos = new Set();
       db[c] = snap.docs.filter(d => d.exists).map(d => { const o = JSON.parse(JSON.stringify(d.data())); confirmado.set(c + '/' + d.id, canon(o)); vistos.add(c + '/' + d.id); return o; });
       for (const k of [...confirmado.keys()]) if (k.startsWith(c + '/') && !vistos.has(k)) confirmado.delete(k);
       marcar(c); if (!pendentes.size) aoMudar();
     }, e => { console.error('db', c, e); marcar(c); });
-    COLS.forEach(ouvir);
-    store.doc(CFG).onSnapshot(d => {
-      if (d.exists) { const v = JSON.parse(JSON.stringify(d.data())); confirmado.set(CFG, canon(v)); db.config = { ...baseVazia().config, ...(v.config || {}) }; db.seq = v.seq || db.seq; }
+    COLS.forEach(c => cancelar.push(ouvir(c)));
+    cancelar.push(store.doc(prefixo + CFG).onSnapshot(d => {
+      if (g !== geracao) return;
+      if (d.exists) { const v = JSON.parse(JSON.stringify(d.data())); confirmado.set(CFG, canon(v)); db.config = { ...configPadrao(), ...(v.config || {}) }; db.seq = v.seq || db.seq; }
       marcar(CFG); if (!pendentes.size) aoMudar();
-    }, e => { console.error('db config', e); marcar(CFG); });
+    }, e => { console.error('db config', e); marcar(CFG); }));
     const tempo = new Promise(r => setTimeout(() => r('lento'), 10000));
-    return { ok: true, lento: (await Promise.race([primeira, tempo])) === 'lento' };
+    return Promise.race([primeira, tempo]).then(x => ({ ok: true, lento: x === 'lento' }));
+  }
+  /** Conecta ao banco da página e acompanha as mudanças (de outro aparelho também). */
+  async function iniciar(onChange, idCarteira) {
+    aoMudar = onChange;
+    store = await claude.use('db');
+    if (!store) return { ok: false };
+    carteira = CARTEIRAS.find(c => c.id === idCarteira) || CARTEIRAS[0]; prefixo = 'carteiras/' + carteira.id + '/';
+    return conectar();
+  }
+  /** Troca de carteira depois que as gravações em andamento terminarem. */
+  function trocar(id) {
+    const c = CARTEIRAS.find(x => x.id === id); if (!c) return Promise.resolve({ ok: false });
+    const p = fila.then(() => { carteira = c; prefixo = 'carteiras/' + c.id + '/'; return conectar(); });
+    fila = p.catch(() => { }); return p;
   }
 
-  return { chamar, iniciar, dados: () => Object.assign(db, { me: { nome: db.config.nome || 'Representante' } }), baseVazia };
+  return { chamar, iniciar, trocar, CARTEIRAS, carteira: () => carteira, dados: () => Object.assign(db, { me: { nome: db.config.nome || 'Representante' } }), baseVazia };
 })();
 
 </script>
@@ -704,9 +732,9 @@ const PAGES = [['sep', 'Dia a dia'], ['painel', '📊', 'Painel'], ['agenda', '�
   ['sep', 'Vendas'], ['pedidos', '🧾', 'Pedidos'], ['comissoes', '💰', 'Comissões'], ['relatorios', '📈', 'Relatórios'],
   ['sep', 'Cadastros'], ['representadas', '🏭', 'Representadas'], ['produtos', '📦', 'Produtos e preços'], ['config', '⚙️', 'Configurações']];
 function iniciarApp() {
-  $('#root').innerHTML = `<div class="app"><aside id="side"><div class="brand"><span>R</span>RepCRM</div><nav id="nav"></nav>
+  $('#root').innerHTML = `<div class="app"><aside id="side"><div class="brand"><span>R</span>RepCRM</div><div class="cart-nome">${esc(Backend.carteira().nome)}</div><nav id="nav"></nav>
     <div class="user-box"><b>${esc(db.me.nome)}</b>${esc(db.config.empresa || '')}</div></aside>
-    <main><div class="top"><button class="btn menu-btn" onclick="$('#side').classList.toggle('open')">☰</button><h1 id="title"></h1><div id="topActions" class="row wrap"></div></div><div id="view"></div></main></div>`;
+    <main><div class="top"><button class="btn menu-btn" onclick="$('#side').classList.toggle('open')">☰</button>${seletorCarteiras()}<h1 id="title"></h1><div id="topActions" class="row wrap"></div></div><div id="view"></div></main></div>`;
   const h = location.hash.slice(1);
   page = PAGES.some(p => p[0] === h) ? h : 'painel';
   render();
@@ -1367,7 +1395,7 @@ VIEWS.config = () => {
   const c = db.config;
   const campos = [['nome', 'Seu nome'], ['empresa', 'Empresa de representação'], ['cnpj', 'CNPJ'], ['core', 'Registro no CORE'], ['telefone', 'Telefone'], ['email', 'E-mail'], ['cidade', 'Cidade'], ['uf', 'UF'], ['rodape', 'Texto no rodapé dos pedidos', 'textarea', null, 'full']];
   $('#view').innerHTML = `<div class="grid half">
-    <div class="card"><h3>Seus dados (saem no pedido impresso)</h3><form id="cfg" class="form">${campos.map(f => campo(f, c)).join('')}</form><div class="actions"><button class="btn pri" onclick="acao(()=>api('PUT','/api/config',Object.fromEntries(new FormData($('#cfg')))),'Dados salvos')">Salvar</button></div></div>
+    <div class="card"><h3>Dados da carteira ${esc(Backend.carteira().nome)} (saem no pedido impresso)</h3><form id="cfg" class="form">${campos.map(f => campo(f, c)).join('')}</form><div class="actions"><button class="btn pri" onclick="acao(()=>api('PUT','/api/config',Object.fromEntries(new FormData($('#cfg')))),'Dados salvos')">Salvar</button></div></div>
     <div>
       <div class="card"><h3>Backup</h3><p class="hint">Seus dados ficam guardados nesta página, na sua conta Claude. Baixe uma cópia de vez em quando, por segurança.</p>
         <div class="row wrap gap4"><button class="btn" onclick="baixarBackup()">⬇ Baixar backup</button><label class="btn" style="margin:0">⬆ Restaurar<input type="file" accept=".json" hidden onchange="restaurar(this.files[0])"></label></div>
@@ -1381,9 +1409,21 @@ async function restaurar(f) {
   await acao(() => api('POST', '/api/restore', { backup: d.backup || d }), 'Backup restaurado');
 }
 async function resetar(modo) {
-  if (modo === 'demo') { if (!(await confirmar('Substituir TODOS os dados por dados de exemplo (fictícios)?', 'Carregar exemplo'))) return; }
-  else if ((await perguntar('Isso apaga TODOS os clientes, pedidos, comissões e cadastros. Baixe um backup antes. Digite APAGAR para confirmar.', '')) !== 'APAGAR') return;
+  if (modo === 'demo') { if (!(await confirmar(`Substituir TODOS os dados da carteira ${Backend.carteira().nome} por dados de exemplo (fictícios)?`, 'Carregar exemplo'))) return; }
+  else if ((await perguntar(`Isso apaga TODOS os clientes, pedidos, comissões e cadastros da carteira ${Backend.carteira().nome}. Baixe um backup antes. Digite APAGAR para confirmar.`, '')) !== 'APAGAR') return;
   await acao(() => api('POST', '/api/reset', { modo }), modo === 'demo' ? 'Exemplo carregado' : 'Tudo apagado');
+}
+
+/* ================== CARTEIRAS (Mayrink / TRAC) ================== */
+let trocando = false;
+const seletorCarteiras = () => `<div class="carteiras" role="group" aria-label="Carteira">${Backend.CARTEIRAS.map(c => `<button class="${c.id === Backend.carteira().id ? 'on' : ''}" aria-pressed="${c.id === Backend.carteira().id}" onclick="trocarCarteira('${c.id}')">${esc(c.nome)}</button>`).join('')}</div>`;
+async function trocarCarteira(id) {
+  if (trocando || id === Backend.carteira().id) return;
+  trocando = true; closeModal(); state = {};
+  document.body.dataset.carteira = id;
+  $('#view').innerHTML = '<div class="carregando">Abrindo carteira…</div>';
+  try { await Backend.trocar(id); try { localStorage.setItem('rc_carteira', id); } catch (e) { } }
+  finally { trocando = false; db = Backend.dados(); iniciarApp(); toast('Carteira ' + Backend.carteira().nome); }
 }
 
 /* ================== DIÁLOGOS (dentro da página) ================== */
@@ -1406,7 +1446,9 @@ const aviso = msg => dialogo(`<p>${esc(msg)}</p>`, [['OK', true, 'pri']]);
 (async () => {
   $('#root').innerHTML = '<div class="carregando">Carregando seus dados…</div>';
   let primeira = true;
-  const r = await Backend.iniciar(() => { if (primeira) return; db = Backend.dados(); render(); });
+  let lembrada = ''; try { lembrada = localStorage.getItem('rc_carteira') || ''; } catch (e) { }
+  const r = await Backend.iniciar(() => { if (primeira || trocando) return; db = Backend.dados(); render(); }, lembrada);
+  document.body.dataset.carteira = Backend.carteira().id;
   if (!r.ok) { $('#root').innerHTML = '<div class="carregando"><b>Não foi possível abrir o banco de dados.</b><br>Entre na sua conta Claude para usar o RepCRM.</div>'; return; }
   primeira = false; db = Backend.dados(); iniciarApp();
   if (r.lento) toast('A conexão está lenta: alguns dados podem aparecer em instantes.');

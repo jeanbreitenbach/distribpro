@@ -8,6 +8,8 @@ Mesma base técnica do DistribPro: **sem dependências**, só precisa do Node.js
 
 O RepCRM também roda como uma página na sua conta Claude, com os dados guardados ali mesmo. Não precisa de hospedagem nem de login próprio: https://claude.ai/artifact/WAUmo4P1S5pNbELUotW9Bt
 
+Ela tem duas **carteiras separadas, Mayrink e TRAC**, que se troca no topo da tela. Cada carteira é um CRM completo, com os próprios clientes, representadas, produtos, funil, agenda, pedidos, comissões e dados no pedido impresso. A carteira usada por último fica lembrada no aparelho.
+
 Essa versão é montada a partir deste mesmo código por `python3 artifact/build.py`, que gera `artifact/repcrm.html`. Nela, o pedido impresso é baixado como arquivo para abrir e imprimir, e não há usuários e senhas, porque o acesso é o da conta Claude (para dar acesso a uma assistente, use *Compartilhar* na página).
 
 ## Como rodar

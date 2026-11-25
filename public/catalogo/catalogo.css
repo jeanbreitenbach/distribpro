@@ -64,6 +64,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .detalhe{color:var(--verm);font-style:italic;font-weight:600;font-size:13px}
 .meta{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:13px;color:var(--suave)}
 .peso{border:2px solid var(--ouro);border-radius:999px;padding:0 9px;font-weight:700;font-style:italic;color:var(--texto)}
+.ver-preco{all:unset;cursor:pointer;color:var(--verm);font-weight:700;font-size:13.5px;align-self:flex-start;padding:2px 0}
+.ver-preco:hover{text-decoration:underline}
+.ver-preco:focus-visible{outline:3px solid var(--ouro);outline-offset:2px;border-radius:4px}
 .preco-linha{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
 .preco{white-space:nowrap;font-size:19px;font-weight:800;color:var(--texto)}
 .por-kg{font-size:12px;color:var(--suave);margin-top:-2px}

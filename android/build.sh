@@ -14,8 +14,8 @@
 # Senha: variável ASSINATURA_SENHA (padrão "mayrink-catalogo").
 set -euo pipefail
 
-VERSAO_CODIGO=1
-VERSAO_NOME="1.0"
+VERSAO_CODIGO=2
+VERSAO_NOME="1.1"
 
 AQUI="$(cd "$(dirname "$0")" && pwd)"
 RAIZ="$(dirname "$AQUI")"

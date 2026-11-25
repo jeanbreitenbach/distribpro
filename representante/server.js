@@ -113,7 +113,12 @@ function salvarCadastro(u, col, body) {
     novo.baseComissao = novo.baseComissao === 'Pagamento' ? 'Pagamento' : 'Faturamento';
     exigir(novo.comissao >= 0 && novo.comissao <= 100, 'Comissão deve ficar entre 0 e 100%');
   }
-  if (col === 'clientes') { novo.status = R.STATUS_CLIENTE.includes(novo.status) ? novo.status : 'Prospect'; if (!o) novo.criadoEm = R.hoje(); }
+  if (col === 'clientes') {
+    novo.status = R.STATUS_CLIENTE.includes(novo.status) ? novo.status : 'Prospect'; if (!o) novo.criadoEm = R.hoje();
+    const doc = R.digitos(novo.cnpj);
+    if (doc.length >= 11) exigir(!db.clientes.some(c => c.id !== novo.id && R.digitos(c.cnpj) === doc), 'Já existe um cliente com este CNPJ/CPF.');
+    if (doc.length === 14) novo.cnpj = R.fmtCNPJ(doc);
+  }
   if (col === 'produtos') {
     exigir(R.find(db, 'representadas', novo.representadaId), 'Selecione a representada');
     if (novo.codigo) exigir(!db.produtos.some(p => p.id !== novo.id && p.representadaId === novo.representadaId && p.codigo.toLowerCase() === novo.codigo.toLowerCase()), 'Já existe um produto com este código nesta representada');
@@ -265,6 +270,20 @@ rota('POST', '/api/senha', (req, b, u) => {
 }, { grava: true });
 rota('PUT', '/api/crud/:col', (req, b, u, p) => salvarCadastro(u, p.col, b), { grava: true });
 rota('DELETE', '/api/crud/:col/:id', (req, b, u, p) => excluirCadastro(u, p.col, p.id), { grava: true });
+
+/** Dados da empresa na Receita Federal (via BrasilAPI), para cadastrar o cliente só com o CNPJ. */
+const CNPJ_API = process.env.CNPJ_API || 'https://brasilapi.com.br/api/cnpj/v1/';
+rota('GET', '/api/cnpj/:cnpj', async (req, b, u, p) => {
+  const d = R.digitos(p.cnpj); exigir(R.cnpjValido(d), 'CNPJ inválido: confira os números (são 14).');
+  let r;
+  try { r = await fetch(CNPJ_API + d, { signal: AbortSignal.timeout(12000), headers: { 'User-Agent': 'RepCRM/1.0' } }); }
+  catch { throw new Erro(503, 'Não foi possível consultar a Receita agora. Tente de novo ou preencha à mão.'); }
+  if (r.status === 404) throw new Erro(404, 'CNPJ não encontrado na Receita.');
+  if (!r.ok) throw new Erro(503, `A consulta da Receita não respondeu (erro ${r.status}). Tente de novo em instantes.`);
+  const empresa = R.lerConsultaCNPJ(await r.json().catch(() => null));
+  exigir(empresa, 'A consulta não trouxe os dados da empresa.', 502);
+  return { empresa };
+});
 
 rota('POST', '/api/oportunidades/:id/etapa', (req, b, u, p) => {
   const o = R.find(db, 'oportunidades', p.id); exigir(o, 'Oportunidade não encontrada', 404);

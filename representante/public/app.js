@@ -137,15 +137,54 @@ function editar(col, id, padrao = {}, depois) {
   const sc = SCHEMAS[col], o = id ? byId(col, id) : { ...padrao };
   subModal();
   openModal(`<h2>${id ? 'Editar' : 'Novo(a)'} ${sc.titulo.toLowerCase()}</h2>
-    <form id="frm" class="form" onsubmit="event.preventDefault()">${sc.fields.map(f => campo(f, o)).join('')}</form>
+    ${col === 'clientes' ? barraCNPJ(o) : ''}<form id="frm" class="form" data-id="${esc(id || '')}" onsubmit="event.preventDefault()">${sc.fields.map(f => campo(f, o)).join('')}</form>
     <div class="actions">${id ? `<button class="btn danger" onclick="excluir('${col}','${id}')">Excluir</button>` : ''}<span style="flex:1"></span>
       <button class="btn" onclick="fimSub()">Cancelar</button><button class="btn pri" id="btnSalvar">Salvar</button></div>`);
+  if (col === 'clientes' && !id) setTimeout(() => { const c = $('#cbCnpj'); if (c) c.focus(); }, 0);
   $('#btnSalvar').onclick = async () => {
     const f = Object.fromEntries(new FormData($('#frm'))); if (id) f.id = id;
     if (col === 'oportunidades' && id && f.etapa !== o.etapa && String(f.probabilidade) === String(o.probabilidade)) f.probabilidade = R.PROB[f.etapa];
     const r = await acao(() => api('PUT', '/api/crud/' + col, f), 'Salvo');
     if (r) fimSub(depois && (() => depois(r.id)));
   };
+}
+/* ---------- Cadastro pelo CNPJ (dados da Receita) ---------- */
+const barraCNPJ = o => `<div class="cnpj-bar"><label for="cbCnpj">${o.id ? 'Atualizar com os dados da Receita' : 'Cadastrar pelo CNPJ: digite e busque os dados da empresa na Receita'}</label>
+  <div class="row wrap gap4"><input id="cbCnpj" inputmode="numeric" autocomplete="off" placeholder="00.000.000/0000-00" value="${esc(o.cnpj || '')}" style="flex:1;min-width:180px" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarCNPJ()}">
+  <button class="btn" type="button" onclick="buscarCNPJ()">🔎 Buscar dados</button></div><div id="cbMsg" class="hint" style="margin-top:6px"></div><div id="cbCola"></div></div>`;
+async function buscarCNPJ() {
+  const d = R.digitos($('#cbCnpj').value), msg = $('#cbMsg'), id = $('#frm').dataset.id;
+  $('#cbCola').innerHTML = '';
+  if (!R.cnpjValido(d)) { msg.innerHTML = '<span class="t-bad">CNPJ inválido: confira os números (são 14).</span>'; return; }
+  $('#cbCnpj').value = R.fmtCNPJ(d);
+  const dup = db.clientes.find(c => c.id !== id && R.digitos(c.cnpj) === d);
+  if (dup) { msg.innerHTML = `<span class="t-bad">Este CNPJ já está cadastrado:</span> <a class="lnk" onclick="fichaCliente('${dup.id}')">abrir ${esc(dup.fantasia || dup.razao)}</a>`; return; }
+  if (typeof Backend !== 'undefined') return colarConsulta(d); // página no claude.ai: ela não pode acessar outros sites sozinha
+  msg.textContent = 'Consultando a Receita…';
+  try { const r = await api('GET', '/api/cnpj/' + d); preencherCliente(r.empresa); }
+  catch (e) { msg.innerHTML = `<span class="t-bad">${esc(e.message)}</span>`; if (e.status === 503 || e.status === 0) colarConsulta(d); }
+}
+function colarConsulta(d) {
+  $('#cbCola').innerHTML = `<ol class="passos">
+    <li><a class="btn sm pri" href="https://brasilapi.com.br/api/cnpj/v1/${d}" target="_blank" rel="noopener">Abrir a consulta do CNPJ ↗</a> <span class="hint">abre numa nova aba</span></li>
+    <li>Na página que abrir, selecione tudo e copie: <b>Ctrl+A</b> e <b>Ctrl+C</b> (no celular: toque e segure → <i>Selecionar tudo</i> → <i>Copiar</i>).</li>
+    <li>Volte aqui e cole abaixo (<b>Ctrl+V</b>). Os campos se preenchem sozinhos.</li></ol>
+    <textarea id="cbTxt" rows="2" placeholder="Cole aqui o que você copiou"></textarea>`;
+  $('#cbTxt').oninput = () => {
+    const t = $('#cbTxt').value, e = R.lerConsultaCNPJ(t);
+    if (e && R.digitos(e.cnpj) && R.digitos(e.cnpj) !== d) { $('#cbMsg').innerHTML = `<span class="t-bad">Os dados colados são de outro CNPJ (${esc(e.cnpj)}).</span>`; return; }
+    if (e) { $('#cbCola').innerHTML = ''; return preencherCliente(e); }
+    if (/n[aã]o encontrad|not found|404/i.test(t)) $('#cbMsg').innerHTML = '<span class="t-bad">CNPJ não encontrado na Receita.</span>';
+    else if (t.trim().length > 15) $('#cbMsg').innerHTML = '<span class="t-bad">Não reconheci os dados. Copie a página inteira da consulta (Ctrl+A, Ctrl+C) e cole de novo.</span>';
+  };
+}
+function preencherCliente(e) {
+  const f = $('#frm'); let n = 0;
+  const por = (k, v, soVazio) => { const el = f.querySelector(`[name="${k}"]`); if (!el || !v || String(el.value).trim() === String(v) || (soVazio && el.value.trim())) return; el.value = v; el.classList.add('preenchido'); n++; };
+  for (const k of ['razao', 'fantasia', 'cnpj', 'telefone', 'whatsapp', 'email', 'cep', 'logradouro', 'numero', 'bairro', 'cidade', 'uf', 'segmento']) por(k, e[k]);
+  por('contato', e.contato, true); por('cargo', e.cargo, true);
+  const ativa = !e.situacao || /ativa/i.test(e.situacao);
+  $('#cbMsg').innerHTML = `${ativa ? '✅' : '⚠️'} <b>${esc(e.razao)}</b> · situação na Receita: <b class="${ativa ? '' : 't-bad'}">${esc(e.situacao || 'não informada')}</b>${e.abertura ? ' · aberta em ' + fdate(e.abertura) : ''}. ${n} campo(s) preenchido(s), destacados abaixo. Confira e clique em <b>Salvar</b>.`;
 }
 async function excluir(col, id) {
   const extra = col === 'clientes' ? ' As atividades e oportunidades dele também serão apagadas.' : '';

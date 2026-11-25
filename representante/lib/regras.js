@@ -60,6 +60,55 @@
   const situacaoParcela = c => c.recebida ? 'Recebida' : (c.venc < hoje() ? 'Atrasada' : 'A receber');
   const faturado = p => FATURADOS.includes(p.status);
 
-  return { STATUS, FATURADOS, ETAPAS, PROB, TIPOS, STATUS_CLIENTE, r2, hoje, addDays, addMeses, diasEntre, find, ymd,
+  /* ---- CNPJ ---- */
+  const digitos = v => String(v || '').replace(/\D/g, '');
+  function cnpjValido(v) {
+    const d = digitos(v); if (d.length !== 14 || /^(\d)\1+$/.test(d)) return false;
+    const dv = n => { let s = 0, p = n - 7; for (let i = 0; i < n; i++) { s += d[i] * p--; if (p < 2) p = 9; } const r = s % 11; return r < 2 ? 0 : 11 - r; };
+    return dv(12) === +d[12] && dv(13) === +d[13];
+  }
+  const fmtCNPJ = v => { const d = digitos(v); return d.length === 14 ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : String(v || '').trim(); };
+  const fmtFone = v => { let d = digitos(v); if (d.length > 11 && d.startsWith('55')) d = d.slice(2); if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`; if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`; return String(v || '').trim(); };
+  const celular = v => /^\d{2}9\d{8}$/.test(digitos(v).replace(/^55(?=\d{11}$)/, ''));
+  /** Lê o texto da consulta (BrasilAPI ou ReceitaWS). Aceita o JSON puro ou o texto copiado do visualizador do navegador. */
+  function lerConsultaCNPJ(entrada) {
+    let o = entrada;
+    if (typeof entrada === 'string') {
+      const t = entrada.trim(), a = t.indexOf('{'), b = t.lastIndexOf('}');
+      try { o = JSON.parse(a >= 0 && b > a ? t.slice(a, b + 1) : t); }
+      catch {
+        o = {}; // texto copiado do visualizador de JSON: "chave  valor" ou "chave: valor" por linha
+        const chaves = ['cnpj', 'razao_social', 'nome_fantasia', 'descricao_tipo_de_logradouro', 'logradouro', 'numero', 'complemento', 'bairro', 'municipio', 'uf', 'cep', 'ddd_telefone_1', 'ddd_telefone_2',
+          'email', 'cnae_fiscal_descricao', 'descricao_situacao_cadastral', 'data_inicio_atividade', 'nome_socio', 'qualificacao_socio', 'nome', 'fantasia', 'telefone', 'situacao', 'abertura', 'text'];
+        for (const k of chaves) {
+          const m = t.match(new RegExp('(?:^|[\\s{,"\'])' + k + '["\']?\\s*[:\\t=]\\s*"?([^"\\n\\r]*)', 'm'));
+          if (m && !(k in o)) o[k] = m[1].replace(/[",]+\s*$/, '').trim();
+        }
+        if (o.nome_socio) o.qsa = [{ nome_socio: o.nome_socio, qualificacao_socio: o.qualificacao_socio }];
+        if (o.text && !o.cnae_fiscal_descricao) o.atividade_principal = [{ text: o.text }];
+      }
+    }
+    if (!o || typeof o !== 'object') return null;
+    const v = k => (o[k] == null || o[k] === 'null' ? '' : String(o[k]).trim());
+    const razao = v('razao_social') || v('nome');
+    if (!razao) return null;
+    const fones = [v('ddd_telefone_1'), v('ddd_telefone_2'), ...v('telefone').split('/')].map(x => x.trim()).filter(x => digitos(x).length >= 10).map(fmtFone);
+    const cel = fones.find(celular), fixo = fones.find(f => !celular(f)) || fones[0] || '';
+    const socio = (Array.isArray(o.qsa) && o.qsa[0]) || {};
+    const tipo = v('descricao_tipo_de_logradouro'), rua = v('logradouro');
+    const cepD = digitos(v('cep'));
+    const titulo = s => s.toLowerCase().replace(/(^|\s)(\S)/g, (m, a, b) => a + b.toUpperCase()).replace(/\s(De|Da|Do|Das|Dos|E)\s/g, m => m.toLowerCase());
+    return {
+      razao, fantasia: v('nome_fantasia') || v('fantasia'), cnpj: fmtCNPJ(v('cnpj')),
+      logradouro: [tipo && !rua.toUpperCase().startsWith(tipo.toUpperCase()) ? tipo : '', rua].filter(Boolean).join(' ') + (v('complemento') ? ' - ' + v('complemento') : ''),
+      numero: v('numero'), bairro: v('bairro'), cidade: v('municipio'), uf: v('uf').toUpperCase().slice(0, 2), cep: cepD.length === 8 ? cepD.replace(/(\d{5})(\d{3})/, '$1-$2') : v('cep'),
+      telefone: fixo, whatsapp: cel || '', email: v('email').toLowerCase(),
+      segmento: v('cnae_fiscal_descricao') || (Array.isArray(o.atividade_principal) && o.atividade_principal[0] ? String(o.atividade_principal[0].text || '') : ''),
+      contato: socio.nome_socio || socio.nome ? titulo(String(socio.nome_socio || socio.nome)) : '', cargo: String(socio.qualificacao_socio || socio.qual || '').replace(/^\d+-/, ''),
+      situacao: v('descricao_situacao_cadastral') || v('situacao'), abertura: v('data_inicio_atividade') || v('abertura'),
+    };
+  }
+
+  return { digitos, cnpjValido, fmtCNPJ, fmtFone, lerConsultaCNPJ, STATUS, FATURADOS, ETAPAS, PROB, TIPOS, STATUS_CLIENTE, r2, hoje, addDays, addMeses, diasEntre, find, ymd,
     liqItem, totais, comissaoFaturada, valorVenda, prazos, parcelasComissao, parcelas, situacaoParcela, faturado };
 });

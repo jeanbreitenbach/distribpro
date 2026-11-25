@@ -151,3 +151,7 @@ table.itens td{padding:6px 8px;vertical-align:top}
 }
 a.btn{text-decoration:none}
 .kanban{grid-template-columns:repeat(6,minmax(200px,1fr))}
+.cnpj-bar{background:var(--pri-soft);border-radius:10px;padding:12px;margin-bottom:14px}
+.cnpj-bar label{color:var(--text);font-weight:600;font-size:13px}
+.passos{margin:10px 0;padding-left:20px;line-height:1.9}
+.form .preenchido{border-color:var(--ok);background:var(--ok-soft)}

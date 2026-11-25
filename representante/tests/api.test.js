@@ -9,7 +9,7 @@ const R = require('../lib/regras');
 
 const RAIZ = path.join(__dirname, '..');
 const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'repcrm-test-'));
-let PORTA, srv, TK;
+let PORTA, srv, TK, receita;
 const portaLivre = () => new Promise(ok => { const s = net.createServer().listen(0, () => { const p = s.address().port; s.close(() => ok(p)); }); });
 async function req(m, url, corpo, tok = TK) {
   const r = await fetch(`http://127.0.0.1:${PORTA}${url}`, { method: m, headers: { 'Content-Type': 'application/json', ...(tok ? { Authorization: 'Bearer ' + tok } : {}) }, body: corpo === undefined ? undefined : JSON.stringify(corpo) });
@@ -19,12 +19,18 @@ const ok = async (...a) => { const r = await req(...a); assert.equal(r.status, 2
 
 before(async () => {
   PORTA = await portaLivre();
-  srv = spawn(process.execPath, [path.join(RAIZ, 'server.js')], { env: { ...process.env, PORT: String(PORTA), DB_FILE: path.join(DIR, 't.db'), BACKUP_DIAS: '0' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  // Receita falsa (no lugar da BrasilAPI)
+  receita = require('node:http').createServer((q, r) => {
+    const d = q.url.split('/').pop();
+    if (d === '19131243000197') { r.writeHead(200, { 'Content-Type': 'application/json' }); r.end(JSON.stringify({ cnpj: d, razao_social: 'OPEN KNOWLEDGE BRASIL', nome_fantasia: 'OKBR', municipio: 'SAO PAULO', uf: 'SP', cep: '01311902', ddd_telefone_1: '11987654321', descricao_situacao_cadastral: 'ATIVA', qsa: [{ nome_socio: 'MARIA DA SILVA' }] })); }
+    else { r.writeHead(404); r.end('{}'); }
+  }).listen(0); await new Promise(r => receita.once('listening', r));
+  srv = spawn(process.execPath, [path.join(RAIZ, 'server.js')], { env: { ...process.env, PORT: String(PORTA), DB_FILE: path.join(DIR, 't.db'), BACKUP_DIAS: '0', CNPJ_API: `http://127.0.0.1:${receita.address().port}/cnpj/` }, stdio: ['ignore', 'pipe', 'pipe'] });
   let err = ''; srv.stderr.on('data', d => err += d);
   await new Promise((res, rej) => { srv.stdout.on('data', d => { if (String(d).includes('rodando em')) res(); }); srv.on('exit', c => rej(new Error('saiu ' + c + err))); });
   TK = (await req('POST', '/api/login', { email: 'admin@repcrm.local', senha: 'admin123' })).json.token;
 });
-after(() => { srv.kill('SIGTERM'); fs.rmSync(DIR, { recursive: true, force: true }); });
+after(() => { srv.kill('SIGTERM'); receita.close(); fs.rmSync(DIR, { recursive: true, force: true }); });
 
 test('regras: totais, IPI fora da comissão, parcelas por liquidez', () => {
   const ped = { itens: [{ qtd: 10, preco: 100, desc: 10, ipi: 10, comissao: 5 }], descontoGeral: 0, condicao: '30/60/90', dataFaturamento: '2026-01-10' };
@@ -135,6 +141,17 @@ test('importar clientes (planilha do Mercos): cria, atualiza por CNPJ, não dupl
   assert.equal(r.data.clientes.find(c => c.id === existente.id).contato, 'Atualizado');
   assert.equal(r.data.clientes.length, antes.length + 1);
   assert.equal((await req('POST', '/api/clientes/importar', { linhas: [] })).status, 400);
+});
+
+test('cadastro pelo CNPJ: consulta, validação e CNPJ repetido', async () => {
+  const r = await ok('GET', '/api/cnpj/19131243000197');
+  assert.equal(r.empresa.razao, 'OPEN KNOWLEDGE BRASIL'); assert.equal(r.empresa.whatsapp, '(11) 98765-4321'); assert.equal(r.empresa.cep, '01311-902'); assert.equal(r.empresa.contato, 'Maria da Silva');
+  assert.equal((await req('GET', '/api/cnpj/19131243000198')).status, 400, 'dígito verificador errado');
+  assert.equal((await req('GET', '/api/cnpj/11222333000181')).status, 404, 'não existe na Receita');
+  const c = await ok('PUT', '/api/crud/clientes', { ...r.empresa, cnpj: '19131243000197', status: 'Ativo' });
+  assert.equal(c.data.clientes.find(x => x.id === c.id).cnpj, '19.131.243/0001-97', 'CNPJ salvo formatado');
+  assert.equal((await req('PUT', '/api/crud/clientes', { razao: 'Outra', cnpj: '19.131.243/0001-97' })).status, 400, 'CNPJ repetido');
+  await ok('PUT', '/api/crud/clientes', { id: c.id, razao: 'OPEN KNOWLEDGE BRASIL', cnpj: '19131243000197' }); // editar o próprio continua valendo
 });
 
 test('backup, restauração e senha', async () => {

@@ -29,7 +29,7 @@
   const precoPacote = (p, pr = precos[p.codigo]) => (pr && pr.preco ? Math.round(pr.preco * (String(pr.unidade).toUpperCase() === 'KG' ? kgPacote(p) : 1) * 100) / 100 : 0);
   const porKg = pr => String(pr.unidade).toUpperCase() === 'KG';
   function linhaItem(p, qtd, comPreco) {
-    const pr = precos[p.codigo]; let s = `• ${qtd}x ${p.nomeCompleto} [${p.codigo}]`;
+    const pr = precos[p.codigo]; let s = `• ${qtd}x ${p.nomeCompleto}`;
     if (comPreco && pr && pr.preco) s += porKg(pr) ? ` — ${brl(pr.preco)}/kg (${num(kgPacote(p) * qtd)} kg) = ${brl(precoPacote(p) * qtd)}` : ` — ${brl(pr.preco)} = ${brl(pr.preco * qtd)}`;
     return s;
   }
@@ -221,7 +221,7 @@
     if (p && box) {
       const q = qtdDe(box);
       for (const a of j.querySelectorAll('a[data-whats]')) a.href = linkWhats(a.dataset.whats === 'consulta'
-        ? `${saudacao()} Pode me informar o preço e o estoque de: ${p.nomeCompleto} [${p.codigo}]?` : msgItens(a.dataset.whats, [[p, q]]));
+        ? `${saudacao()} Pode me informar o preço e o estoque de: ${p.nomeCompleto}?` : msgItens(a.dataset.whats, [[p, q]]));
     }
     const itens = itensCarrinho(), faltaDados = !cliente.nome || !cliente.cidade;
     for (const a of $('#janelaCarrinho').querySelectorAll('a[data-whats-carrinho]')) {

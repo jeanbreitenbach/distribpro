@@ -852,7 +852,7 @@ window.CATALOGO = {
    }
   },
   {
-   "codigo": "200",
+   "codigo": "65",
    "nome": "Bacon em Cubos Lanche 1,500 kg",
    "marca": "Sulblime",
    "embalagem": "Pacote 1,500 kg",
